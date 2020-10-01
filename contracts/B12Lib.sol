@@ -56,6 +56,76 @@ library B12_381Lib {
         G2Point Y;
     }
 
+        function FpEq(B12_377Lib.Fp memory a, B12_377Lib.Fp memory b)
+        internal
+        pure
+        returns (bool)
+    {
+        return (a.a == b.a && a.b == b.b);
+    }
+
+    function Fp2Eq(B12_377Lib.Fp2 memory a, B12_377Lib.Fp2 memory b)
+        internal
+        pure
+        returns (bool)
+    {
+        return FpEq(a.a, b.a) && FpEq(a.b, b.b);
+    }
+
+    function g1Eq(B12_377Lib.G1Point memory a, B12_377Lib.G1Point memory b)
+        internal
+        pure
+        returns (bool)
+    {
+        return FpEq(a.X, b.X) && FpEq(a.Y, b.Y);
+    }
+
+    function g1Eq(B12_377Lib.G2Point memory a, B12_377Lib.G2Point memory b)
+        internal
+        pure
+        returns (bool)
+    {
+        return (Fp2Eq(a.X, b.X) && Fp2Eq(a.Y, b.Y));
+    }
+
+    function g1FromBytes(bytes memory input, uint256 offset)
+        internal
+        view
+        returns (B12_377Lib.G1Point memory ret)
+    {
+        require(input.length >= offset + 128, "overrun");
+        uint256 ptr;
+        assembly {
+            ptr := add(add(input, 0x20), offset) // ((input + 20) + offset)
+            mstore(add(ret, 0x00), mload(add(ptr, 0x00))) // ret.X.a
+            mstore(add(ret, 0x20), mload(add(ptr, 0x20))) // ret.X.b
+            mstore(add(ret, 0x40), mload(add(ptr, 0x40))) // ret.Y.a
+            mstore(add(ret, 0x60), mload(add(ptr, 0x60))) // ret.Y.b
+        }
+
+        console.log(ret.X.a, ret.X.b, ret.Y.a, ret.Y.b);
+    }
+
+    function g2FromBytes(bytes memory input, uint256 offset)
+        internal
+        pure
+        returns (B12_377Lib.G2Point memory ret)
+    {
+        require(input.length >= offset + 256, "overrun");
+        uint256 ptr;
+        assembly {
+            ptr := add(add(input, 0x20), offset)
+            mstore(add(ret, 0x00), mload(add(ptr, 0x00))) // ret.X.a.a
+            mstore(add(ret, 0x20), mload(add(ptr, 0x20))) // ret.X.a.b
+            mstore(add(ret, 0x40), mload(add(ptr, 0x40))) // ret.X.b.a
+            mstore(add(ret, 0x60), mload(add(ptr, 0x60))) // ret.X.b.b
+            mstore(add(ret, 0x80), mload(add(ptr, 0x80))) // ret.Y.a.a
+            mstore(add(ret, 0xa0), mload(add(ptr, 0xa0))) // ret.Y.a.b
+            mstore(add(ret, 0xc0), mload(add(ptr, 0xc0))) // ret.Y.b.a
+            mstore(add(ret, 0xe0), mload(add(ptr, 0xe0))) // ret.Y.b.b
+        }
+    }
+
     // Overwrites A
     function g1Add(G1Point memory a, G1Point memory b) internal view {
         uint256[8] memory input;
@@ -335,6 +405,76 @@ library B12_377Lib {
     struct PairingArg {
         G1Point X;
         G2Point Y;
+    }
+
+        function FpEq(B12_377Lib.Fp memory a, B12_377Lib.Fp memory b)
+        internal
+        pure
+        returns (bool)
+    {
+        return (a.a == b.a && a.b == b.b);
+    }
+
+    function Fp2Eq(B12_377Lib.Fp2 memory a, B12_377Lib.Fp2 memory b)
+        internal
+        pure
+        returns (bool)
+    {
+        return FpEq(a.a, b.a) && FpEq(a.b, b.b);
+    }
+
+    function g1Eq(B12_377Lib.G1Point memory a, B12_377Lib.G1Point memory b)
+        internal
+        pure
+        returns (bool)
+    {
+        return FpEq(a.X, b.X) && FpEq(a.Y, b.Y);
+    }
+
+    function g1Eq(B12_377Lib.G2Point memory a, B12_377Lib.G2Point memory b)
+        internal
+        pure
+        returns (bool)
+    {
+        return (Fp2Eq(a.X, b.X) && Fp2Eq(a.Y, b.Y));
+    }
+
+    function g1FromBytes(bytes memory input, uint256 offset)
+        internal
+        view
+        returns (B12_377Lib.G1Point memory ret)
+    {
+        require(input.length >= offset + 128, "overrun");
+        uint256 ptr;
+        assembly {
+            ptr := add(add(input, 0x20), offset) // ((input + 20) + offset)
+            mstore(add(ret, 0x00), mload(add(ptr, 0x00))) // ret.X.a
+            mstore(add(ret, 0x20), mload(add(ptr, 0x20))) // ret.X.b
+            mstore(add(ret, 0x40), mload(add(ptr, 0x40))) // ret.Y.a
+            mstore(add(ret, 0x60), mload(add(ptr, 0x60))) // ret.Y.b
+        }
+
+        console.log(ret.X.a, ret.X.b, ret.Y.a, ret.Y.b);
+    }
+
+    function g2FromBytes(bytes memory input, uint256 offset)
+        internal
+        pure
+        returns (B12_377Lib.G2Point memory ret)
+    {
+        require(input.length >= offset + 256, "overrun");
+        uint256 ptr;
+        assembly {
+            ptr := add(add(input, 0x20), offset)
+            mstore(add(ret, 0x00), mload(add(ptr, 0x00))) // ret.X.a.a
+            mstore(add(ret, 0x20), mload(add(ptr, 0x20))) // ret.X.a.b
+            mstore(add(ret, 0x40), mload(add(ptr, 0x40))) // ret.X.b.a
+            mstore(add(ret, 0x60), mload(add(ptr, 0x60))) // ret.X.b.b
+            mstore(add(ret, 0x80), mload(add(ptr, 0x80))) // ret.Y.a.a
+            mstore(add(ret, 0xa0), mload(add(ptr, 0xa0))) // ret.Y.a.b
+            mstore(add(ret, 0xc0), mload(add(ptr, 0xc0))) // ret.Y.b.a
+            mstore(add(ret, 0xe0), mload(add(ptr, 0xe0))) // ret.Y.b.b
+        }
     }
 
     // Overwrites A
