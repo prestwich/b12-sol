@@ -15,6 +15,15 @@ task("accounts", "Prints the list of accounts", async () => {
 // defaultNetwork, networks, solc, and paths.
 // Go to https://buidler.dev/config/ to learn more
 module.exports = {
+  defaultNetwork: "espresso",
+  timeout: 60 * 1000,
+  networks: {
+    espresso: {
+      url: "http://localhost:8545",
+      gas: 6000000,
+    },
+  },
+
   // This is a sample solc configuration that specifies which version of solc to use
   solc: {
     version: "0.6.8",

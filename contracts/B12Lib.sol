@@ -90,7 +90,7 @@ library B12_381Lib {
 
     function g1FromBytes(bytes memory input, uint256 offset)
         internal
-        view
+        pure
         returns (B12_377Lib.G1Point memory ret)
     {
         require(input.length >= offset + 128, "overrun");
@@ -102,8 +102,6 @@ library B12_381Lib {
             mstore(add(ret, 0x40), mload(add(ptr, 0x40))) // ret.Y.a
             mstore(add(ret, 0x60), mload(add(ptr, 0x60))) // ret.Y.b
         }
-
-        console.log(ret.X.a, ret.X.b, ret.Y.a, ret.Y.b);
     }
 
     function g2FromBytes(bytes memory input, uint256 offset)
@@ -441,7 +439,7 @@ library B12_377Lib {
 
     function g1FromBytes(bytes memory input, uint256 offset)
         internal
-        view
+        pure
         returns (B12_377Lib.G1Point memory ret)
     {
         require(input.length >= offset + 128, "overrun");
@@ -453,8 +451,6 @@ library B12_377Lib {
             mstore(add(ret, 0x40), mload(add(ptr, 0x40))) // ret.Y.a
             mstore(add(ret, 0x60), mload(add(ptr, 0x60))) // ret.Y.b
         }
-
-        console.log(ret.X.a, ret.X.b, ret.Y.a, ret.Y.b);
     }
 
     function g2FromBytes(bytes memory input, uint256 offset)

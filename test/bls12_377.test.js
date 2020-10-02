@@ -8,12 +8,19 @@ describe("B12", () => {
 
   before(async () => {
     const Passthrough = await ethers.getContractFactory("Passthrough");
-    instance = await Passthrough.deploy();
+    instance = Passthrough.attach('0x2768df34cD34ecBdad30B6d191DaDfc5ED502eA9');
+    // instance = await Passthrough.deploy();
   });
 
   it("should g1Add", async () => {
     for (const test of g1Add) {
-        await instance.g1Add.call(`0x${test.Input}`, `0x${test.Expected}`, { gasLimit: 600000 });
+        assert.include(
+          await instance.simple(`0x${test.Input}`, 19, 128),
+          // await instance.g1Add(`0x${test.Input}`, `0x${test.Expected}`),
+          test.Expected,
+        );
+
+        // await instance.simpleTx(`0x${test.Input}`, 19, 128);
     }
   });
 });
