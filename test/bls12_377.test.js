@@ -8,19 +8,22 @@ describe("B12", () => {
 
   before(async () => {
     const Passthrough = await ethers.getContractFactory("Passthrough");
-    instance = Passthrough.attach('0x2768df34cD34ecBdad30B6d191DaDfc5ED502eA9');
-    // instance = await Passthrough.deploy();
+    // instance = Passthrough.attach('0x68B984f13fce74D287A675eb2856cD1B13cff840');
+    instance = await Passthrough.deploy();
   });
 
   it("should g1Add", async () => {
     for (const test of g1Add) {
-        assert.include(
-          await instance.simple(`0x${test.Input}`, 19, 128),
-          // await instance.g1Add(`0x${test.Input}`, `0x${test.Expected}`),
-          test.Expected,
-        );
+        // assert.include(
+        //   await instance.simple(`0x${test.Input}`, 19, 128),
+        //   // await instance.g1Add(`0x${test.Input}`),
+        //   `0x${test.Expected}`,
+        // );
 
-        // await instance.simpleTx(`0x${test.Input}`, 19, 128);
+        // const tx = await instance.g1Add(`0x${test.Input}`);
+        // console.log(await tx.wait())
+
+        await instance.simpleTx(`0x${test.Input}`, 19, 128);
     }
   });
 });

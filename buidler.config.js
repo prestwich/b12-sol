@@ -16,9 +16,9 @@ task("accounts", "Prints the list of accounts", async () => {
 // Go to https://buidler.dev/config/ to learn more
 module.exports = {
   defaultNetwork: "espresso",
-  timeout: 60 * 1000,
   networks: {
     espresso: {
+      timeout: 60 * 1000,
       url: "http://localhost:8545",
       gas: 6000000,
     },
