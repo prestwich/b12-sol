@@ -6,6 +6,10 @@ mainnet at time of writing, and require specialized client software to execute.
 
 This library was written for an internal hackathon at Celo.
 
+## Status
+
+These libraries are in a very early state and should be considered **non-functional**.
+
 ## Design notes
 
 This work builds largely on prior work 
