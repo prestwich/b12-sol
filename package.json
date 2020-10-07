@@ -9,7 +9,8 @@
   "author": "James Prestwich",
   "license": "ISC",
   "dependencies": {
-    "@nomiclabs/buidler": "^1.4.7"
+    "@nomiclabs/buidler": "^1.4.7",
+    "@summa-tx/bitcoin-spv-sol": "^4.0.1"
   },
   "devDependencies": {
     "@nomiclabs/buidler-ethers": "^2.0.0",

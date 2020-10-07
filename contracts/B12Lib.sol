@@ -1,11 +1,17 @@
 //SPDX-License-Identifier: MIT OR Apache-2.0
-pragma solidity ^0.6.8;
-pragma experimental ABIEncoderV2;
+pragma solidity ^0.5.10;
 
-// largely based on 
+// largely based on
 // https://github.com/ralexstokes/deposit-verifier/blob/master/deposit_verifier.sol
 
+import {
+    TypedMemView
+} from "@summa-tx/bitcoin-spv-sol/contracts/TypedMemView.sol";
+
 library B12_381Lib {
+    using TypedMemView for bytes;
+    using TypedMemView for bytes29;
+
     uint8 constant G1_ADD = 10;
     uint8 constant G1_MUL = 11;
     uint8 constant G1_MULTI_EXP = 12;
@@ -56,19 +62,11 @@ library B12_381Lib {
         G2Point Y;
     }
 
-        function FpEq(Fp memory a, Fp memory b)
-        internal
-        pure
-        returns (bool)
-    {
+    function FpEq(Fp memory a, Fp memory b) internal pure returns (bool) {
         return (a.a == b.a && a.b == b.b);
     }
 
-    function Fp2Eq(Fp2 memory a, Fp2 memory b)
-        internal
-        pure
-        returns (bool)
-    {
+    function Fp2Eq(Fp2 memory a, Fp2 memory b) internal pure returns (bool) {
         return FpEq(a.a, b.a) && FpEq(a.b, b.b);
     }
 
@@ -93,15 +91,13 @@ library B12_381Lib {
         pure
         returns (G1Point memory ret)
     {
-        require(input.length >= offset + 128, "overrun");
-        uint256 ptr;
-        assembly {
-            ptr := add(add(input, 0x20), offset) // ((input + 20) + offset)
-            mstore(add(ret, 0x00), mload(add(ptr, 0x00))) // ret.X.a
-            mstore(add(ret, 0x20), mload(add(ptr, 0x20))) // ret.X.b
-            mstore(add(ret, 0x40), mload(add(ptr, 0x40))) // ret.Y.a
-            mstore(add(ret, 0x60), mload(add(ptr, 0x60))) // ret.Y.b
-        }
+        // unchecked sub is safe due to view validity checks
+        bytes29 ref = input.ref(0).postfix(input.length - offset, 0);
+
+        ret.X.a = ref.indexUint(0, 32);
+        ret.X.b = ref.indexUint(32, 32);
+        ret.Y.a = ref.indexUint(64, 32);
+        ret.Y.b = ref.indexUint(96, 32);
     }
 
     function parseG2(bytes memory input, uint256 offset)
@@ -109,69 +105,50 @@ library B12_381Lib {
         pure
         returns (G2Point memory ret)
     {
-        require(input.length >= offset + 256, "overrun");
-        uint256 ptr;
-        assembly {
-            ptr := add(add(input, 0x20), offset)
-            mstore(add(ret, 0x00), mload(add(ptr, 0x00))) // ret.X.a.a
-            mstore(add(ret, 0x20), mload(add(ptr, 0x20))) // ret.X.a.b
-            mstore(add(ret, 0x40), mload(add(ptr, 0x40))) // ret.X.b.a
-            mstore(add(ret, 0x60), mload(add(ptr, 0x60))) // ret.X.b.b
-            mstore(add(ret, 0x80), mload(add(ptr, 0x80))) // ret.Y.a.a
-            mstore(add(ret, 0xa0), mload(add(ptr, 0xa0))) // ret.Y.a.b
-            mstore(add(ret, 0xc0), mload(add(ptr, 0xc0))) // ret.Y.b.a
-            mstore(add(ret, 0xe0), mload(add(ptr, 0xe0))) // ret.Y.b.b
-        }
+        // unchecked sub is safe due to view validity checks
+        bytes29 ref = input.ref(0).postfix(input.length - offset, 0);
+
+        ret.X.a.a = ref.indexUint(0, 32);
+        ret.X.a.b = ref.indexUint(32, 32);
+        ret.X.b.a = ref.indexUint(64, 32);
+        ret.X.b.b = ref.indexUint(96, 32);
+        ret.Y.a.a = ref.indexUint(128, 32);
+        ret.Y.a.b = ref.indexUint(160, 32);
+        ret.Y.b.a = ref.indexUint(192, 32);
+        ret.Y.b.b = ref.indexUint(224, 32);
     }
 
-    function serializeG1(G1Point memory p) internal pure returns (bytes memory) {
-        uint256 xa = p.X.a;
-        uint256 xb = p.X.b;
-        uint256 ya = p.Y.a;
-        uint256 yb = p.Y.b;
-        
-        bytes memory ret;
-        assembly {
-            ret := mload(0x40)
-            mstore(0x40, add(ret, 0xa0))
-            mstore(ret, 128)
-            mstore(add(ret, 0x20), xa)
-            mstore(add(ret, 0x40), xb)
-            mstore(add(ret, 0x60), ya)
-            mstore(add(ret, 0x80), yb)
-        }
-        return ret;
+    function serializeG1(G1Point memory p)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(p.X.a, p.X.b, p.Y.a, p.Y.b);
     }
 
-    function serializeG2(G2Point memory p) internal pure returns (bytes memory) {
-        uint256 xaa = p.X.a.a;
-        uint256 xab = p.X.a.b;
-        uint256 xba = p.X.b.a;
-        uint256 xbb = p.X.b.b;
-        uint256 yaa = p.Y.a.a;
-        uint256 yab = p.Y.a.b;
-        uint256 yba = p.Y.b.a;
-        uint256 ybb = p.Y.b.b;
-
-        bytes memory ret;
-        assembly {
-            ret := mload(0x40)
-            mstore(0x40, add(ret, 0x120))
-            mstore(ret, 128)
-            mstore(add(ret, 0x20), xaa)
-            mstore(add(ret, 0x40), xab)
-            mstore(add(ret, 0x60), xba)
-            mstore(add(ret, 0x80), xbb)
-            mstore(add(ret, 0xa0), yaa)
-            mstore(add(ret, 0xc0), yab)
-            mstore(add(ret, 0xe0), yba)
-            mstore(add(ret, 0x100), ybb)
-        }
-        return ret;
+    function serializeG2(G2Point memory p)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return
+            abi.encodePacked(
+                p.X.a.a,
+                p.X.a.b,
+                p.X.b.a,
+                p.X.b.b,
+                p.Y.a.a,
+                p.Y.a.b,
+                p.Y.b.a,
+                p.Y.b.b
+            );
     }
 
-    // Overwrites A
-    function g1Add(G1Point memory a, G1Point memory b) internal view {
+    function g1Add(G1Point memory a, G1Point memory b)
+        internal
+        view
+        returns (G1Point memory c)
+    {
         uint256[8] memory input;
         input[0] = a.X.a;
         input[1] = a.X.b;
@@ -184,23 +161,26 @@ library B12_381Lib {
         input[7] = b.Y.b;
 
         bool success;
+        uint8 ADDR = G1_ADD;
         assembly {
-            success := staticcall(
-                15000,
-                G1_ADD,
-                input,
-                256,
-                a, // reuse the memory to avoid growing
-                128
-            )
+            success := staticcall(15000, ADDR, input, 256, input, 128)
             // deallocate the input, leaving dirty memory
             mstore(0x40, input)
         }
+
         require(success, "g1 add precompile failed");
+        c.X.a = input[0];
+        c.X.b = input[1];
+        c.Y.a = input[2];
+        c.Y.b = input[3];
     }
 
     // Overwrites A
-    function g1Mul(G1Point memory a, uint256 scalar) internal view {
+    function g1Mul(G1Point memory a, uint256 scalar)
+        internal
+        view
+        returns (G1Point memory c)
+    {
         uint256[5] memory input;
         input[0] = a.X.a;
         input[1] = a.X.b;
@@ -210,19 +190,24 @@ library B12_381Lib {
         input[4] = scalar;
 
         bool success;
+        uint8 ADDR = G1_MUL;
         assembly {
             success := staticcall(
-                15000,
-                G1_MUL,
+                50000,
+                ADDR,
                 input,
                 160,
-                a, // reuse the memory to avoid growing
+                input, // reuse the memory to avoid growing
                 128
             )
             // deallocate the input, leaving dirty memory
             mstore(0x40, input)
         }
         require(success, "g1 mul precompile failed");
+        c.X.a = input[0];
+        c.X.b = input[1];
+        c.Y.a = input[2];
+        c.Y.b = input[3];
     }
 
     function g1MultiExp(G1MultiExpArg[] memory argVec)
@@ -231,12 +216,13 @@ library B12_381Lib {
         returns (G1Point memory c)
     {
         uint256 len = argVec.length;
-        uint256 roughCost = len * 12000 * 1200 / 1000;
+        uint256 roughCost = (len * 12000 * 1200) / 1000;
         bool success;
+        uint8 ADDR = G1_MULTI_EXP;
         assembly {
             success := staticcall(
                 roughCost,
-                G1_MULTI_EXP,
+                ADDR,
                 add(argVec, 0x20), // the body of the array
                 mul(160, len), // 160 bytes per arg
                 c, // write directly to the already allocated result
@@ -247,8 +233,11 @@ library B12_381Lib {
         require(success, "g1 multiExp precompile failed");
     }
 
-    // Overwrites A
-    function g2Add(G2Point memory a, G2Point memory b) internal view {
+    function g2Add(G2Point memory a, G2Point memory b)
+        internal
+        view
+        returns (G2Point memory c)
+    {
         uint256[16] memory input;
         input[0] = a.X.a.a;
         input[1] = a.X.a.b;
@@ -271,19 +260,29 @@ library B12_381Lib {
         input[15] = b.Y.b.b;
 
         bool success;
+        uint8 ADDR = G2_ADD;
         assembly {
             success := staticcall(
                 20000,
-                G2_ADD,
+                ADDR,
                 input,
                 512,
-                a, // reuse the memory to avoid growing
+                input, // reuse the memory to avoid growing
                 256
             )
             // deallocate the input, leaving dirty memory
             mstore(0x40, input)
         }
         require(success, "g2 add precompile failed");
+        c.X.a.a = input[0];
+        c.X.a.b = input[1];
+        c.X.b.a = input[2];
+        c.X.b.b = input[3];
+
+        c.Y.a.a = input[4];
+        c.Y.a.b = input[5];
+        c.Y.b.a = input[6];
+        c.Y.b.b = input[7];
     }
 
     // Overwrites A
@@ -303,10 +302,11 @@ library B12_381Lib {
         input[8] = scalar;
 
         bool success;
+        uint8 ADDR = G2_MUL;
         assembly {
             success := staticcall(
                 60000,
-                G2_MUL,
+                ADDR,
                 input,
                 288,
                 a, // reuse the memory to avoid growing
@@ -324,12 +324,13 @@ library B12_381Lib {
         returns (G1Point memory c)
     {
         uint256 len = argVec.length;
-        uint256 roughCost = len * 55000 * 1200 / 1000;
+        uint256 roughCost = (len * 55000 * 1200) / 1000;
         bool success;
+        uint8 ADDR = G2_MULTI_EXP;
         assembly {
             success := staticcall(
                 roughCost,
-                G2_MULTI_EXP,
+                ADDR,
                 add(argVec, 0x20), // the body of the array
                 mul(288, len), // 288 bytes per arg
                 c, // write directly to the already allocated result
@@ -346,12 +347,14 @@ library B12_381Lib {
         returns (bool result)
     {
         uint256 len = argVec.length;
-        uint256 roughCost =  23000 * len + 135000;
+        uint256 roughCost = 23000 * len + 135000;
+
+        uint8 ADDR = PAIRING;
         bool success;
         assembly {
             success := staticcall(
                 roughCost,
-                PAIRING,
+                ADDR,
                 add(argVec, 0x20), // the body of the array
                 mul(384, len), // 384 bytes per arg
                 mload(0x40), // write to earliest freemem
@@ -368,10 +371,11 @@ library B12_381Lib {
         input[1] = a.b;
 
         bool success;
+        uint8 ADDR = MAP_TO_G1;
         assembly {
             success := staticcall(
                 20000,
-                MAP_TO_G1,
+                ADDR,
                 input, // the body of the array
                 64,
                 b, // write directly to pre-allocated result
@@ -390,10 +394,11 @@ library B12_381Lib {
         input[3] = a.b.b;
 
         bool success;
+        uint8 ADDR = MAP_TO_G2;
         assembly {
             success := staticcall(
                 120000,
-                MAP_TO_G2,
+                ADDR,
                 input, // the body of the array
                 128,
                 b, // write directly to pre-allocated result
@@ -406,6 +411,9 @@ library B12_381Lib {
 }
 
 library B12_377Lib {
+    using TypedMemView for bytes;
+    using TypedMemView for bytes29;
+
     uint8 constant G1_ADD = 19;
     uint8 constant G1_MUL = 20;
     uint8 constant G1_MULTI_EXP = 21;
@@ -454,19 +462,11 @@ library B12_377Lib {
         G2Point Y;
     }
 
-        function FpEq(Fp memory a, Fp memory b)
-        internal
-        pure
-        returns (bool)
-    {
+    function FpEq(Fp memory a, Fp memory b) internal pure returns (bool) {
         return (a.a == b.a && a.b == b.b);
     }
 
-    function Fp2Eq(Fp2 memory a, Fp2 memory b)
-        internal
-        pure
-        returns (bool)
-    {
+    function Fp2Eq(Fp2 memory a, Fp2 memory b) internal pure returns (bool) {
         return FpEq(a.a, b.a) && FpEq(a.b, b.b);
     }
 
@@ -491,15 +491,13 @@ library B12_377Lib {
         pure
         returns (G1Point memory ret)
     {
-        require(input.length >= offset + 128, "overrun");
-        uint256 ptr;
-        assembly {
-            ptr := add(add(input, 0x20), offset) // ((input + 20) + offset)
-            mstore(add(ret, 0x00), mload(add(ptr, 0x00))) // ret.X.a
-            mstore(add(ret, 0x20), mload(add(ptr, 0x20))) // ret.X.b
-            mstore(add(ret, 0x40), mload(add(ptr, 0x40))) // ret.Y.a
-            mstore(add(ret, 0x60), mload(add(ptr, 0x60))) // ret.Y.b
-        }
+        // unchecked sub is safe due to view validity checks
+        bytes29 ref = input.ref(0).postfix(input.length - offset, 0);
+
+        ret.X.a = ref.indexUint(0, 32);
+        ret.X.b = ref.indexUint(32, 32);
+        ret.Y.a = ref.indexUint(64, 32);
+        ret.Y.b = ref.indexUint(96, 32);
     }
 
     function parseG2(bytes memory input, uint256 offset)
@@ -507,70 +505,50 @@ library B12_377Lib {
         pure
         returns (G2Point memory ret)
     {
-        require(input.length >= offset + 256, "overrun");
-        uint256 ptr;
-        assembly {
-            ptr := add(add(input, 0x20), offset)
-            mstore(add(ret, 0x00), mload(add(ptr, 0x00))) // ret.X.a.a
-            mstore(add(ret, 0x20), mload(add(ptr, 0x20))) // ret.X.a.b
-            mstore(add(ret, 0x40), mload(add(ptr, 0x40))) // ret.X.b.a
-            mstore(add(ret, 0x60), mload(add(ptr, 0x60))) // ret.X.b.b
-            mstore(add(ret, 0x80), mload(add(ptr, 0x80))) // ret.Y.a.a
-            mstore(add(ret, 0xa0), mload(add(ptr, 0xa0))) // ret.Y.a.b
-            mstore(add(ret, 0xc0), mload(add(ptr, 0xc0))) // ret.Y.b.a
-            mstore(add(ret, 0xe0), mload(add(ptr, 0xe0))) // ret.Y.b.b
-        }
+        // unchecked sub is safe due to view validity checks
+        bytes29 ref = input.ref(0).postfix(input.length - offset, 0);
+
+        ret.X.a.a = ref.indexUint(0, 32);
+        ret.X.a.b = ref.indexUint(32, 32);
+        ret.X.b.a = ref.indexUint(64, 32);
+        ret.X.b.b = ref.indexUint(96, 32);
+        ret.Y.a.a = ref.indexUint(128, 32);
+        ret.Y.a.b = ref.indexUint(160, 32);
+        ret.Y.b.a = ref.indexUint(192, 32);
+        ret.Y.b.b = ref.indexUint(224, 32);
     }
 
-    function serializeG1(G1Point memory p) internal pure returns (bytes memory) {
-        uint256 xa = p.X.a;
-        uint256 xb = p.X.b;
-        uint256 ya = p.Y.a;
-        uint256 yb = p.Y.b;
-        
-        bytes memory ret;
-        assembly {
-            ret := mload(0x40)
-            mstore(0x40, add(ret, 0xa0))
-            mstore(ret, 128)
-            mstore(add(ret, 0x20), xa)
-            mstore(add(ret, 0x40), xb)
-            mstore(add(ret, 0x60), ya)
-            mstore(add(ret, 0x80), yb)
-        }
-        return ret;
+    function serializeG1(G1Point memory p)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(p.X.a, p.X.b, p.Y.a, p.Y.b);
     }
 
-    function serializeG2(G2Point memory p) internal pure returns (bytes memory) {
-        uint256 xaa = p.X.a.a;
-        uint256 xab = p.X.a.b;
-        uint256 xba = p.X.b.a;
-        uint256 xbb = p.X.b.b;
-        uint256 yaa = p.Y.a.a;
-        uint256 yab = p.Y.a.b;
-        uint256 yba = p.Y.b.a;
-        uint256 ybb = p.Y.b.b;
-
-        bytes memory ret;
-        assembly {
-            ret := mload(0x40)
-            mstore(0x40, add(ret, 0x120))
-            mstore(ret, 128)
-            mstore(add(ret, 0x20), xaa)
-            mstore(add(ret, 0x40), xab)
-            mstore(add(ret, 0x60), xba)
-            mstore(add(ret, 0x80), xbb)
-            mstore(add(ret, 0xa0), yaa)
-            mstore(add(ret, 0xc0), yab)
-            mstore(add(ret, 0xe0), yba)
-            mstore(add(ret, 0x100), ybb)
-        }
-        return ret;
+    function serializeG2(G2Point memory p)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return
+            abi.encodePacked(
+                p.X.a.a,
+                p.X.a.b,
+                p.X.b.a,
+                p.X.b.b,
+                p.Y.a.a,
+                p.Y.a.b,
+                p.Y.b.a,
+                p.Y.b.b
+            );
     }
 
-
-    // Overwrites A
-    function g1Add(G1Point memory a, G1Point memory b) internal view {
+    function g1Add(G1Point memory a, G1Point memory b)
+        internal
+        view
+        returns (G1Point memory c)
+    {
         uint256[8] memory input;
         input[0] = a.X.a;
         input[1] = a.X.b;
@@ -583,23 +561,26 @@ library B12_377Lib {
         input[7] = b.Y.b;
 
         bool success;
+        uint8 ADDR = G1_ADD;
         assembly {
-            success := staticcall(
-                50000,
-                G1_ADD,
-                input,
-                256,
-                a, // reuse the memory to avoid growing
-                128
-            )
+            success := staticcall(15000, ADDR, input, 256, input, 128)
             // deallocate the input, leaving dirty memory
             mstore(0x40, input)
         }
+
         require(success, "g1 add precompile failed");
+        c.X.a = input[0];
+        c.X.b = input[1];
+        c.Y.a = input[2];
+        c.Y.b = input[3];
     }
 
     // Overwrites A
-    function g1Mul(G1Point memory a, uint256 scalar) internal view {
+    function g1Mul(G1Point memory a, uint256 scalar)
+        internal
+        view
+        returns (G1Point memory c)
+    {
         uint256[5] memory input;
         input[0] = a.X.a;
         input[1] = a.X.b;
@@ -609,19 +590,24 @@ library B12_377Lib {
         input[4] = scalar;
 
         bool success;
+        uint8 ADDR = G1_MUL;
         assembly {
             success := staticcall(
                 50000,
-                G1_MUL,
+                ADDR,
                 input,
                 160,
-                a, // reuse the memory to avoid growing
+                input, // reuse the memory to avoid growing
                 128
             )
             // deallocate the input, leaving dirty memory
             mstore(0x40, input)
         }
         require(success, "g1 mul precompile failed");
+        c.X.a = input[0];
+        c.X.b = input[1];
+        c.Y.a = input[2];
+        c.Y.b = input[3];
     }
 
     function g1MultiExp(G1MultiExpArg[] memory argVec)
@@ -630,12 +616,13 @@ library B12_377Lib {
         returns (G1Point memory c)
     {
         uint256 len = argVec.length;
-        uint256 roughCost = len * 12000 * 1200 / 1000;
+        uint256 roughCost = (len * 12000 * 1200) / 1000;
         bool success;
+        uint8 ADDR = G1_MULTI_EXP;
         assembly {
             success := staticcall(
                 roughCost,
-                G1_MULTI_EXP,
+                ADDR,
                 add(argVec, 0x20), // the body of the array
                 mul(160, len), // 160 bytes per arg
                 c, // write directly to the already allocated result
@@ -646,8 +633,11 @@ library B12_377Lib {
         require(success, "g1 multiExp precompile failed");
     }
 
-    // Overwrites A
-    function g2Add(G2Point memory a, G2Point memory b) internal view {
+    function g2Add(G2Point memory a, G2Point memory b)
+        internal
+        view
+        returns (G2Point memory c)
+    {
         uint256[16] memory input;
         input[0] = a.X.a.a;
         input[1] = a.X.a.b;
@@ -670,23 +660,37 @@ library B12_377Lib {
         input[15] = b.Y.b.b;
 
         bool success;
+        uint8 ADDR = G2_ADD;
         assembly {
             success := staticcall(
                 20000,
-                G2_ADD,
+                ADDR,
                 input,
                 512,
-                a, // reuse the memory to avoid growing
+                input, // reuse the memory to avoid growing
                 256
             )
             // deallocate the input, leaving dirty memory
             mstore(0x40, input)
         }
         require(success, "g2 add precompile failed");
+        c.X.a.a = input[0];
+        c.X.a.b = input[1];
+        c.X.b.a = input[2];
+        c.X.b.b = input[3];
+
+        c.Y.a.a = input[4];
+        c.Y.a.b = input[5];
+        c.Y.b.a = input[6];
+        c.Y.b.b = input[7];
     }
 
     // Overwrites A
-    function g2Mul(G2Point memory a, uint256 scalar) internal view {
+    function g2Mul(G2Point memory a, uint256 scalar)
+        internal
+        view
+        returns (G2Point memory c)
+    {
         uint256[9] memory input;
 
         input[0] = a.X.a.a;
@@ -702,19 +706,29 @@ library B12_377Lib {
         input[8] = scalar;
 
         bool success;
+        uint8 ADDR = G2_MUL;
         assembly {
             success := staticcall(
                 60000,
-                G2_MUL,
+                ADDR,
                 input,
                 288,
-                a, // reuse the memory to avoid growing
+                input, // reuse the memory to avoid growing
                 256
             )
             // deallocate the input, leaving dirty memory
             mstore(0x40, input)
         }
         require(success, "g2 mul precompile failed");
+        c.X.a.a = input[0];
+        c.X.a.b = input[1];
+        c.X.b.a = input[2];
+        c.X.b.b = input[3];
+
+        c.Y.a.a = input[4];
+        c.Y.a.b = input[5];
+        c.Y.b.a = input[6];
+        c.Y.b.b = input[7];
     }
 
     function g2MultiExp(G2MultiExpArg[] memory argVec)
@@ -723,12 +737,13 @@ library B12_377Lib {
         returns (G1Point memory c)
     {
         uint256 len = argVec.length;
-        uint256 roughCost = len * 55000 * 1200 / 1000;
+        uint256 roughCost = (len * 55000 * 1200) / 1000;
         bool success;
+        uint8 ADDR = G2_MULTI_EXP;
         assembly {
             success := staticcall(
                 roughCost,
-                G2_MULTI_EXP,
+                ADDR,
                 add(argVec, 0x20), // the body of the array
                 mul(288, len), // 288 bytes per arg
                 c, // write directly to the already allocated result
@@ -746,11 +761,13 @@ library B12_377Lib {
     {
         uint256 len = argVec.length;
         bool success;
-        uint256 roughCost =  23000 * len + 135000;
+
+        uint8 ADDR = PAIRING;
+        uint256 roughCost = 23000 * len + 135000;
         assembly {
             success := staticcall(
                 roughCost,
-                PAIRING,
+                ADDR,
                 add(argVec, 0x20), // the body of the array
                 mul(384, len), // 384 bytes per arg
                 mload(0x40), // write to earliest freemem
