@@ -48,18 +48,18 @@ library B12_381Lib {
     }
 
     struct G1MultiExpArg {
-        G1Point X;
+        G1Point point;
         uint256 scalar;
     }
 
     struct G2MultiExpArg {
-        G2Point X;
+        G2Point point;
         uint256 scalar;
     }
 
     struct PairingArg {
-        G1Point X;
-        G2Point Y;
+        G1Point g1;
+        G2Point g2;
     }
 
     function FpEq(Fp memory a, Fp memory b) internal pure returns (bool) {
@@ -215,22 +215,36 @@ library B12_381Lib {
         view
         returns (G1Point memory c)
     {
-        uint256 len = argVec.length;
-        uint256 roughCost = (len * 12000 * 1200) / 1000;
+        uint256[] memory input = new uint256[](argVec.length * 5);
+        // hate this
+        for (uint256 i = 0; i < input.length; i += 5) {
+            input[i + 0] = argVec[i].point.X.a;
+            input[i + 1] = argVec[i].point.X.b;
+            input[i + 2] = argVec[i].point.Y.a;
+            input[i + 3] = argVec[i].point.Y.b;
+            input[i + 4] = argVec[i].scalar;
+        }
+
         bool success;
         uint8 ADDR = G1_MULTI_EXP;
+        uint256 roughCost = (argVec.length * 12000 * 1200) / 1000;
         assembly {
             success := staticcall(
                 roughCost,
                 ADDR,
-                add(argVec, 0x20), // the body of the array
-                mul(160, len), // 160 bytes per arg
-                c, // write directly to the already allocated result
+                add(input, 0x20),
+                mul(mload(input), 0x20),
+                add(input, 0x20),
                 128
             )
             // deallocate the input, leaving dirty memory
+            mstore(0x40, input)
         }
         require(success, "g1 multiExp precompile failed");
+        c.X.a = input[0];
+        c.X.b = input[1];
+        c.Y.a = input[2];
+        c.Y.b = input[3];
     }
 
     function g2Add(G2Point memory a, G2Point memory b)
@@ -321,24 +335,47 @@ library B12_381Lib {
     function g2MultiExp(G2MultiExpArg[] memory argVec)
         internal
         view
-        returns (G1Point memory c)
+        returns (G2Point memory c)
     {
-        uint256 len = argVec.length;
-        uint256 roughCost = (len * 55000 * 1200) / 1000;
+        uint256[] memory input = new uint256[](argVec.length * 9);
+        // hate this
+        for (uint256 i = 0; i < input.length / 9; i += 1) {
+            uint256 idx = i * 9;
+            input[idx + 0] = argVec[i].point.X.a.a;
+            input[idx + 1] = argVec[i].point.X.a.b;
+            input[idx + 2] = argVec[i].point.X.b.a;
+            input[idx + 3] = argVec[i].point.X.b.b;
+            input[idx + 4] = argVec[i].point.Y.a.a;
+            input[idx + 5] = argVec[i].point.Y.a.b;
+            input[idx + 6] = argVec[i].point.Y.b.a;
+            input[idx + 7] = argVec[i].point.Y.b.b;
+            input[idx + 8] = argVec[i].scalar;
+        }
+
         bool success;
         uint8 ADDR = G2_MULTI_EXP;
+        uint256 roughCost = (argVec.length * 55000 * 1200) / 1000;
         assembly {
             success := staticcall(
                 roughCost,
                 ADDR,
-                add(argVec, 0x20), // the body of the array
-                mul(288, len), // 288 bytes per arg
-                c, // write directly to the already allocated result
+                add(input, 0x20),
+                mul(mload(input), 0x20), // 288 bytes per arg
+                add(input, 0x20), // write directly to the already allocated result
                 256
             )
-            // deallocate the input, leaving dirty memory
+            // deallocate the input, leaving dirty memory               
+            mstore(0x40, input)
         }
         require(success, "g2 multiExp precompile failed");
+        c.X.a.a = input[0];
+        c.X.a.b = input[1];
+        c.X.b.a = input[2];
+        c.X.b.b = input[3];
+        c.Y.a.a = input[4];
+        c.Y.a.b = input[5];
+        c.Y.b.a = input[6];
+        c.Y.b.b = input[7];
     }
 
     function pairing(PairingArg[] memory argVec)
@@ -347,7 +384,7 @@ library B12_381Lib {
         returns (bool result)
     {
         uint256 len = argVec.length;
-        uint256 roughCost = 23000 * len + 135000;
+        uint256 roughCost = 23000 * len + 115000;
 
         uint8 ADDR = PAIRING;
         bool success;
@@ -448,20 +485,19 @@ library B12_377Lib {
     }
 
     struct G1MultiExpArg {
-        G1Point X;
+        G1Point point;
         uint256 scalar;
     }
 
     struct G2MultiExpArg {
-        G2Point X;
+        G2Point point;
         uint256 scalar;
     }
 
     struct PairingArg {
-        G1Point X;
-        G2Point Y;
+        G1Point g1;
+        G2Point g2;
     }
-
     function FpEq(Fp memory a, Fp memory b) internal pure returns (bool) {
         return (a.a == b.a && a.b == b.b);
     }
@@ -615,22 +651,37 @@ library B12_377Lib {
         view
         returns (G1Point memory c)
     {
-        uint256 len = argVec.length;
-        uint256 roughCost = (len * 12000 * 1200) / 1000;
+        uint256[] memory input = new uint256[](argVec.length * 5);
+        // hate this
+        for (uint256 i = 0; i < input.length / 5; i += 1) {
+            uint256 idx = i * 5;
+            input[idx + 0] = argVec[i].point.X.a;
+            input[idx + 1] = argVec[i].point.X.b;
+            input[idx + 2] = argVec[i].point.Y.a;
+            input[idx + 3] = argVec[i].point.Y.b;
+            input[idx + 4] = argVec[i].scalar;
+        }
+
         bool success;
         uint8 ADDR = G1_MULTI_EXP;
+        uint256 roughCost = (argVec.length * 12000 * 1200) / 1000;
         assembly {
             success := staticcall(
                 roughCost,
                 ADDR,
-                add(argVec, 0x20), // the body of the array
-                mul(160, len), // 160 bytes per arg
-                c, // write directly to the already allocated result
+                add(input, 0x20),
+                mul(mload(input), 0x20),
+                add(input, 0x20),
                 128
             )
             // deallocate the input, leaving dirty memory
+            mstore(0x40, input)
         }
         require(success, "g1 multiExp precompile failed");
+        c.X.a = input[0];
+        c.X.b = input[1];
+        c.Y.a = input[2];
+        c.Y.b = input[3];
     }
 
     function g2Add(G2Point memory a, G2Point memory b)
@@ -734,24 +785,47 @@ library B12_377Lib {
     function g2MultiExp(G2MultiExpArg[] memory argVec)
         internal
         view
-        returns (G1Point memory c)
+        returns (G2Point memory c)
     {
-        uint256 len = argVec.length;
-        uint256 roughCost = (len * 55000 * 1200) / 1000;
+        uint256[] memory input = new uint256[](argVec.length * 9);
+        // hate this
+        for (uint256 i = 0; i < input.length / 9; i += 1) {
+            uint256 idx = i * 9;
+            input[idx + 0] = argVec[i].point.X.a.a;
+            input[idx + 1] = argVec[i].point.X.a.b;
+            input[idx + 2] = argVec[i].point.X.b.a;
+            input[idx + 3] = argVec[i].point.X.b.b;
+            input[idx + 4] = argVec[i].point.Y.a.a;
+            input[idx + 5] = argVec[i].point.Y.a.b;
+            input[idx + 6] = argVec[i].point.Y.b.a;
+            input[idx + 7] = argVec[i].point.Y.b.b;
+            input[idx + 8] = argVec[i].scalar;
+        }
+
         bool success;
         uint8 ADDR = G2_MULTI_EXP;
+        uint256 roughCost = (argVec.length * 55000 * 1200) / 1000;
         assembly {
             success := staticcall(
                 roughCost,
                 ADDR,
-                add(argVec, 0x20), // the body of the array
-                mul(288, len), // 288 bytes per arg
-                c, // write directly to the already allocated result
+                add(input, 0x20),
+                mul(mload(input), 0x20), // 288 bytes per arg
+                add(input, 0x20), // write directly to the already allocated result
                 256
             )
-            // deallocate the input, leaving dirty memory
+            // deallocate the input, leaving dirty memory               
+            mstore(0x40, input)
         }
         require(success, "g2 multiExp precompile failed");
+        c.X.a.a = input[0];
+        c.X.a.b = input[1];
+        c.X.b.a = input[2];
+        c.X.b.b = input[3];
+        c.Y.a.a = input[4];
+        c.Y.a.b = input[5];
+        c.Y.b.a = input[6];
+        c.Y.b.b = input[7];
     }
 
     function pairing(PairingArg[] memory argVec)
@@ -763,7 +837,7 @@ library B12_377Lib {
         bool success;
 
         uint8 ADDR = PAIRING;
-        uint256 roughCost = 23000 * len + 135000;
+        uint256 roughCost = 55000 * len + 65000;
         assembly {
             success := staticcall(
                 roughCost,
