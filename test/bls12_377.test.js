@@ -14,8 +14,8 @@ describe("BLS12-377", function () {
   
   before(async () => {
     const Passthrough = await ethers.getContractFactory("Passthrough");
-    // instance = Passthrough.attach('0xc1ed42C35d8a2d1C3673bC3DBa8F426d29C631eB');
-    instance = await Passthrough.deploy();
+    instance = Passthrough.attach('0x5d432D9AA925210DfbCfd967E884C216853dC017');
+    // instance = await Passthrough.deploy();
   });
 
   it("should g1Add", async () => {

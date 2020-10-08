@@ -29,4 +29,4 @@ are 0-initialized.
 
 ## Tests
 
-Soon :)
+Connect a node to the espresso testnet, and run `$ npm run test`
