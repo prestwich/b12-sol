@@ -29,4 +29,4 @@ are 0-initialized.
 
 ## Tests
 
-Connect a node to the espresso testnet, and run `$ npm run test`
+Connect a node to the [Espresso testnet](https://github.com/prestwich/go-ethereum), and run `$ npm run test`
