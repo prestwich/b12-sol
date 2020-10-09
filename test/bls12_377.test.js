@@ -10,12 +10,12 @@ const g2MultiExp = require("./bls12377G2MultiExp_matter.json");
 
 describe("BLS12-377", function () {
   let instance;
-  this.timeout(40000);
+  this.timeout(60000);
   
   before(async () => {
     const Passthrough = await ethers.getContractFactory("Passthrough");
-    instance = Passthrough.attach('0x5d432D9AA925210DfbCfd967E884C216853dC017');
-    // instance = await Passthrough.deploy();
+    // instance = Passthrough.attach('0x5d432D9AA925210DfbCfd967E884C216853dC017');
+    instance = await Passthrough.deploy();
   });
 
   it("should g1Add", async () => {

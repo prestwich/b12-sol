@@ -1,12 +1,12 @@
 //SPDX-License-Identifier: MIT OR Apache-2.0
-pragma solidity ^0.5.10;
+pragma solidity >=0.5.10;
 
 // largely based on
 // https://github.com/ralexstokes/deposit-verifier/blob/master/deposit_verifier.sol
 
 import {
     TypedMemView
-} from "@summa-tx/bitcoin-spv-sol/contracts/TypedMemView.sol";
+} from "@summa-tx/memview.sol/contracts/TypedMemView.sol";
 
 library B12_381Lib {
     using TypedMemView for bytes;

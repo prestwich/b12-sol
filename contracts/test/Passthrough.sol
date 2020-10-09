@@ -1,10 +1,10 @@
 //SPDX-License-Identifier: MIT OR Apache-2.0
-pragma solidity ^0.5.10;
+pragma solidity >=0.5.10;
 
 import {B12_377Lib} from "../B12Lib.sol";
 import {
     TypedMemView
-} from "@summa-tx/bitcoin-spv-sol/contracts/TypedMemView.sol";
+} from "@summa-tx/memview.sol/contracts/TypedMemView.sol";
 
 contract Passthrough {
     using B12_377Lib for B12_377Lib.G1Point;

@@ -4,15 +4,20 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "npx buidler test"
+    "5:compile": "npx buidler compile --config buidler.config.5.js",
+    "6:compile": "npx buidler compile --config buidler.config.6.js",
+    "compile": "npm run 5:compile && npm run 6:compile",
+    "5:test": "npx buidler test --config buidler.config.5.js",
+    "6:test": "npx buidler test --config buidler.config.6.js",
+    "test": "npm run 5:test && npm run 6:test"
   },
   "author": "James Prestwich",
-  "license": "ISC",
+  "license": "MIT OR Apache-2.0",
   "dependencies": {
-    "@nomiclabs/buidler": "^1.4.7",
-    "@summa-tx/bitcoin-spv-sol": "^4.0.1"
+    "@summa-tx/memview.sol": "^1.1.0"
   },
   "devDependencies": {
+    "@nomiclabs/buidler": "^1.4.7",
     "@nomiclabs/buidler-ethers": "^2.0.0",
     "@nomiclabs/buidler-waffle": "^2.1.0",
     "chai": "^4.2.0",
