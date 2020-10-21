@@ -2,9 +2,7 @@
 pragma solidity >=0.5.10;
 
 import {B12_377Lib} from "../B12Lib.sol";
-import {
-    TypedMemView
-} from "@summa-tx/memview.sol/contracts/TypedMemView.sol";
+import {TypedMemView} from "@summa-tx/memview.sol/contracts/TypedMemView.sol";
 
 contract Passthrough {
     using B12_377Lib for B12_377Lib.G1Point;
@@ -97,7 +95,8 @@ contract Passthrough {
     {
         bytes29 ref = args.ref(0);
 
-        B12_377Lib.G1MultiExpArg[] memory input
+
+            B12_377Lib.G1MultiExpArg[] memory input
          = new B12_377Lib.G1MultiExpArg[](args.length / 160);
 
         for (uint256 i = 0; i < args.length / 160; i += 1) {
@@ -132,7 +131,8 @@ contract Passthrough {
     {
         bytes29 ref = args.ref(0);
 
-        B12_377Lib.G2MultiExpArg[] memory input
+
+            B12_377Lib.G2MultiExpArg[] memory input
          = new B12_377Lib.G2MultiExpArg[](args.length / 288);
 
         for (uint256 i = 0; i < args.length / 288; i += 1) {

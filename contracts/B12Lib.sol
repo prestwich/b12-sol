@@ -4,9 +4,7 @@ pragma solidity >=0.5.10;
 // largely based on
 // https://github.com/ralexstokes/deposit-verifier/blob/master/deposit_verifier.sol
 
-import {
-    TypedMemView
-} from "@summa-tx/memview.sol/contracts/TypedMemView.sol";
+import {TypedMemView} from "@summa-tx/memview.sol/contracts/TypedMemView.sol";
 
 library B12_381Lib {
     using TypedMemView for bytes;
@@ -86,6 +84,54 @@ library B12_381Lib {
         return (Fp2Eq(a.X, b.X) && Fp2Eq(a.Y, b.Y));
     }
 
+    function parseFp(bytes memory input, uint256 offset)
+        internal
+        pure
+        returns (Fp memory ret)
+    {
+        bytes29 ref = input.ref(0).postfix(input.length - offset, 0);
+
+        ret.a = ref.indexUint(0, 32);
+        ret.b = ref.indexUint(32, 32);
+    }
+
+    function parseFp2(bytes memory input, uint256 offset)
+        internal
+        pure
+        returns (Fp2 memory ret)
+    {
+        bytes29 ref = input.ref(0).postfix(input.length - offset, 0);
+
+        ret.a.a = ref.indexUint(0, 32);
+        ret.a.b = ref.indexUint(32, 32);
+        ret.b.a = ref.indexUint(64, 32);
+        ret.b.b = ref.indexUint(96, 32);
+    }
+
+    function parseCompactFp(bytes memory input, uint256 offset)
+        internal
+        pure
+        returns (Fp memory ret)
+    {
+        bytes29 ref = input.ref(0).postfix(input.length - offset, 0);
+
+        ret.a = ref.indexUint(0, 16);
+        ret.b = ref.indexUint(16, 32);
+    }
+
+    function parseCompactFp2(bytes memory input, uint256 offset)
+        internal
+        pure
+        returns (Fp2 memory ret)
+    {
+        bytes29 ref = input.ref(0).postfix(input.length - offset, 0);
+        
+        ret.a.a = ref.indexUint(48, 16);
+        ret.a.b = ref.indexUint(64, 32);
+        ret.b.a = ref.indexUint(0, 16);
+        ret.b.b = ref.indexUint(16, 32);
+    }
+
     function parseG1(bytes memory input, uint256 offset)
         internal
         pure
@@ -142,6 +188,13 @@ library B12_381Lib {
                 p.Y.b.a,
                 p.Y.b.b
             );
+    }
+
+    function negativeP1() internal pure returns (G1Point memory p) {
+        p.X.a = 31827880280837800241567138048534752271;
+        p.X.b = 88385725958748408079899006800036250932223001591707578097800747617502997169851;
+        p.Y.a = 22997279242622214937712647648895181298;
+        p.Y.b = 46816884707101390882112958134453447585552332943769894357249934112654335001290;
     }
 
     function g1Add(G1Point memory a, G1Point memory b)
@@ -364,7 +417,7 @@ library B12_381Lib {
                 add(input, 0x20), // write directly to the already allocated result
                 256
             )
-            // deallocate the input, leaving dirty memory               
+            // deallocate the input, leaving dirty memory
             mstore(0x40, input)
         }
         require(success, "g2 multiExp precompile failed");
@@ -498,6 +551,7 @@ library B12_377Lib {
         G1Point g1;
         G2Point g2;
     }
+
     function FpEq(Fp memory a, Fp memory b) internal pure returns (bool) {
         return (a.a == b.a && a.b == b.b);
     }
@@ -520,6 +574,54 @@ library B12_377Lib {
         returns (bool)
     {
         return (Fp2Eq(a.X, b.X) && Fp2Eq(a.Y, b.Y));
+    }
+
+    function parseFp(bytes memory input, uint256 offset)
+        internal
+        pure
+        returns (Fp memory ret)
+    {
+        bytes29 ref = input.ref(0).postfix(input.length - offset, 0);
+
+        ret.a = ref.indexUint(0, 32);
+        ret.b = ref.indexUint(32, 32);
+    }
+
+    function parseFp2(bytes memory input, uint256 offset)
+        internal
+        pure
+        returns (Fp2 memory ret)
+    {
+        bytes29 ref = input.ref(0).postfix(input.length - offset, 0);
+
+        ret.a.a = ref.indexUint(0, 32);
+        ret.a.b = ref.indexUint(32, 32);
+        ret.b.a = ref.indexUint(64, 32);
+        ret.b.b = ref.indexUint(96, 32);
+    }
+
+    function parseCompactFp(bytes memory input, uint256 offset)
+        internal
+        pure
+        returns (Fp memory ret)
+    {
+        bytes29 ref = input.ref(0).postfix(input.length - offset, 0);
+
+        ret.a = ref.indexUint(0, 16);
+        ret.b = ref.indexUint(16, 32);
+    }
+
+    function parseCompactFp2(bytes memory input, uint256 offset)
+        internal
+        pure
+        returns (Fp2 memory ret)
+    {
+        bytes29 ref = input.ref(0).postfix(input.length - offset, 0);
+        
+        ret.a.a = ref.indexUint(48, 16);
+        ret.a.b = ref.indexUint(64, 32);
+        ret.b.a = ref.indexUint(0, 16);
+        ret.b.b = ref.indexUint(16, 32);
     }
 
     function parseG1(bytes memory input, uint256 offset)
@@ -814,7 +916,7 @@ library B12_377Lib {
                 add(input, 0x20), // write directly to the already allocated result
                 256
             )
-            // deallocate the input, leaving dirty memory               
+            // deallocate the input, leaving dirty memory
             mstore(0x40, input)
         }
         require(success, "g2 multiExp precompile failed");
