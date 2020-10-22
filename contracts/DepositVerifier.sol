@@ -246,19 +246,15 @@ contract DepositVerifier {
         bytes memory publicKeyYCoordinateBytes,
         bytes memory signatureYCoordinateBytes
     ) internal view returns (bool) {
-        B12_381Lib.Fp memory publicKeyYCoordinate = publicKeyYCoordinateBytes.parseFp(0);
-        B12_381Lib.Fp2 memory signatureYCoordinate = signatureYCoordinateBytes.parseFp2(0);
+        B12_381Lib.Fp memory publicKeyYCoordinate = publicKeyYCoordinateBytes
+            .parseFp(0);
+        B12_381Lib.Fp2 memory signatureYCoordinate = signatureYCoordinateBytes
+            .parseFp2(0);
 
         B12_381Lib.PairingArg[] memory args = new B12_381Lib.PairingArg[](2);
 
-        args[0].g1 = decodeG1Point(
-            encodedPublicKey,
-            publicKeyYCoordinate
-        );
-        args[0].g2 = decodeG2Point(
-            encodedSignature,
-            signatureYCoordinate
-        );
+        args[0].g1 = decodeG1Point(encodedPublicKey, publicKeyYCoordinate);
+        args[0].g2 = decodeG2Point(encodedSignature, signatureYCoordinate);
 
         args[1].g1 = B12_381Lib.negativeP1();
         args[1].g2 = hashToCurve(message);
@@ -274,18 +270,31 @@ contract DepositVerifier {
         bytes calldata publicKeyYCoordinate,
         bytes calldata signatureYCoordinate
     ) external payable {
-        require(publicKey.length == PUBLIC_KEY_LENGTH, "incorrectly sized public key");
-        require(withdrawalCredentials.length == WITHDRAWAL_CREDENTIALS_LENGTH, "incorrectly sized withdrawal credentials");
-        require(signature.length == SIGNATURE_LENGTH, "incorrectly sized signature");
-        require(publicKeyYCoordinate.length == 64, "incorrectly sized signatureYCoordinate");
-        require(signatureYCoordinate.length == 128, "incorrectly sized signatureYCoordinate");
+        require(
+            publicKey.length == PUBLIC_KEY_LENGTH,
+            "incorrectly sized public key"
+        );
+        require(
+            withdrawalCredentials.length == WITHDRAWAL_CREDENTIALS_LENGTH,
+            "incorrectly sized withdrawal credentials"
+        );
+        require(
+            signature.length == SIGNATURE_LENGTH,
+            "incorrectly sized signature"
+        );
+        require(
+            publicKeyYCoordinate.length == 64,
+            "incorrectly sized signatureYCoordinate"
+        );
+        require(
+            signatureYCoordinate.length == 128,
+            "incorrectly sized signatureYCoordinate"
+        );
         bytes32 signingRoot = computeSigningRoot(
             publicKey,
             withdrawalCredentials,
             msg.value
         );
-
-
 
         require(
             blsSignatureIsValid(
@@ -298,6 +307,11 @@ contract DepositVerifier {
             "BLS signature verification failed"
         );
 
-        depositContract.deposit{value: msg.value}(publicKey, withdrawalCredentials, signature, depositDataRoot);
+        depositContract.deposit{value: msg.value}(
+            publicKey,
+            withdrawalCredentials,
+            signature,
+            depositDataRoot
+        );
     }
 }
