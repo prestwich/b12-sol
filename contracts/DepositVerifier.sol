@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: The Unlicense
+// Based on work here:
+// https://github.com/ralexstokes/deposit-verifier
+
 pragma solidity ^0.6.8;
 
 import {B12_381Lib} from "./B12Lib.sol";
