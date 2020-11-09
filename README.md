@@ -4,7 +4,8 @@ This library provides simply solidity wrappers for the BLS12-381 and BLS12-377
 precompiles found in EIP-2537 and EIP-2539. These EIPs are not active on 
 mainnet at time of writing, and require specialized client software to execute.
 
-This library was written for an internal hackathon at Celo.
+This library was written for an internal hackathon at Celo, and should be 
+considered experimental. `main` may be broken at any time.
 
 ## Status
 
