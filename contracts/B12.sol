@@ -54,8 +54,80 @@ library B12 {
         return (a.a == b.a && a.b == b.b);
     }
 
+    function fpGt(Fp memory a, Fp memory b) internal pure returns (bool) {
+        return (a.a > b.a || (a.a == b.a && a.b > b.b));
+    }
+
     function Fp2Eq(Fp2 memory a, Fp2 memory b) internal pure returns (bool) {
         return FpEq(a.a, b.a) && FpEq(a.b, b.b);
+    }
+
+    function fpAdd(Fp memory a, Fp memory b) internal pure returns (Fp memory) {
+        uint256 bb = a.b + b.b;
+        uint256 aa = a.a + b.a + (bb >= a.b && bb >= b.b ? 0 : 1);
+        return Fp(aa, bb);
+    }
+
+    function fpModExp(Fp memory base, uint exponent, Fp memory modulus) internal view returns (Fp memory) {
+        uint256 base1 = base.a;
+        uint256 base2 = base.b;
+        uint256 modulus1 = modulus.a;
+        uint256 modulus2 = modulus.b;
+        bytes memory arg = new bytes(3+32+64+64);
+        bytes memory ret = new bytes(64);
+        uint256 result1;
+        uint256 result2;
+        assembly {
+            // length of base, exponent, modulus
+            mstore(add(arg, 0x20), 0x40)
+            mstore(add(arg, 0x40), 0x20)
+            mstore(add(arg, 0x60), 0x20)
+
+            // assign base, exponent, modulus
+            mstore(add(arg, 0x80), base1)
+            mstore(add(arg, 0xa0), base2)
+            mstore(add(arg, 0xc0), exponent)
+            mstore(add(arg, 0xe0), modulus1)
+            mstore(add(arg, 0x100), modulus2)
+
+            // call the precompiled contract BigModExp (0x05)
+            let success := staticcall(0x05, 0x0, add(arg, 0x20), 0x100, add(ret, 0x20), 0x40)
+            switch success
+                case 0 {
+                revert(0x0, 0x0)
+            } default {
+                result1 := mload(add(0x20,ret))
+                result2 := mload(add(0x40,ret))
+            }
+        }
+        return Fp(result1, result2);
+    }
+
+    function fpMul(Fp memory a, Fp memory b) internal pure returns (Fp memory) {
+        uint256 a1 = uint128(a.b);
+        uint256 a2 = uint128(a.b >> 128);
+        uint256 a3 = uint128(a.a);
+        uint256 a4 = uint128(a.a >> 128);
+        uint256 b1 = uint128(b.b);
+        uint256 b2 = uint128(b.b >> 128);
+        uint256 b3 = uint128(b.a);
+        uint256 b4 = uint128(b.a >> 128);
+        Fp memory r1 = Fp(0,a1*b1);
+        Fp memory r2 = Fp((a1*b2 + a2*b1) >> 128, (a1*b2 + a2*b1) << 128);
+        Fp memory r3 = Fp(a1*b3 + a2*b2 * a3*b1, 0);
+        Fp memory r4 = Fp((a1*b4 + a2*b3 * a3*b2 + a4*b1) << 128, 0);
+        return fpAdd(r1, fpAdd(r2, fpAdd(r3, r4)));
+    }
+
+    function fpNormal(Fp memory a) internal view returns (Fp memory) {
+        Fp memory p = Fp(0x1ae3a4617c510eac63b05c06ca1493b, 0x1a22d9f300f5138f1ef3622fba094800170b5d44300000008508c00000000001);
+        return fpModExp(a, 1, p);
+        // does p have inverse mod 2^512 ?
+        /*
+        Fp memory inv_p = Fp(0x8b566adb72049f1114e3f8c7e500b031b7d9dc9d16afbe660affdd1a1beeec01, 0x966d2f05974d6aa9db689a3cb86f5fffbadde8336ffffffef5ee800000000001);
+        fpMul(inv_p);
+        */
+
     }
 
     function g1Eq(G1Point memory a, G1Point memory b)

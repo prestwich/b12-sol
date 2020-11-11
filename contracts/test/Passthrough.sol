@@ -1,15 +1,21 @@
 //SPDX-License-Identifier: MIT OR Apache-2.0
 pragma solidity >=0.5.10;
 
-import {B12_377Lib} from "../B12Lib.sol";
+import {CeloB12_377Lib} from "../B12.sol";
+import {B12} from "../B12.sol";
 import {TypedMemView} from "@summa-tx/memview.sol/contracts/TypedMemView.sol";
 
 contract Passthrough {
-    using B12_377Lib for B12_377Lib.G1Point;
-    using B12_377Lib for B12_377Lib.G2Point;
-    using B12_377Lib for B12_377Lib.Fp;
-    using B12_377Lib for B12_377Lib.Fp2;
-    using B12_377Lib for bytes;
+    using CeloB12_377Lib for B12.G1Point;
+    using CeloB12_377Lib for B12.G2Point;
+    using CeloB12_377Lib for B12.Fp;
+    using CeloB12_377Lib for B12.Fp2;
+    using B12 for B12.G1Point;
+    using B12 for B12.G2Point;
+    using B12 for B12.Fp;
+    using B12 for B12.Fp2;
+    using CeloB12_377Lib for bytes;
+    using B12 for bytes;
 
     using TypedMemView for bytes;
     using TypedMemView for bytes29;
@@ -77,13 +83,13 @@ contract Passthrough {
     }
 
     function g1Add(bytes calldata args) external view returns (bytes memory) {
-        B12_377Lib.G1Point memory a = args.parseG1(0);
-        B12_377Lib.G1Point memory b = args.parseG1(4 * 32);
+        B12.G1Point memory a = args.parseG1(0);
+        B12.G1Point memory b = args.parseG1(4 * 32);
         return a.g1Add(b).serializeG1();
     }
 
     function g1Mul(bytes calldata args) external view returns (bytes memory) {
-        B12_377Lib.G1Point memory a = args.parseG1(0);
+        B12.G1Point memory a = args.parseG1(0);
         uint256 scalar = args.ref(0).indexUint(4 * 32, 32);
         return a.g1Mul(scalar).serializeG1();
     }
@@ -96,8 +102,8 @@ contract Passthrough {
         bytes29 ref = args.ref(0);
 
 
-            B12_377Lib.G1MultiExpArg[] memory input
-         = new B12_377Lib.G1MultiExpArg[](args.length / 160);
+        B12.G1MultiExpArg[] memory input
+         = new B12.G1MultiExpArg[](args.length / 160);
 
         for (uint256 i = 0; i < args.length / 160; i += 1) {
             uint256 idx = i * 160;
@@ -109,19 +115,20 @@ contract Passthrough {
             input[i].scalar = ref.indexUint(idx + 0x80, 32);
         }
 
-        return B12_377Lib.g1MultiExp(input).serializeG1();
+        return CeloB12_377Lib.g1MultiExp(input).serializeG1();
     }
 
     function g2Add(bytes calldata args) external view returns (bytes memory) {
-        B12_377Lib.G2Point memory a = args.parseG2(0);
-        B12_377Lib.G2Point memory b = args.parseG2(8 * 32);
+        B12.G2Point memory a = args.parseG2(0);
+        B12.G2Point memory b = args.parseG2(8 * 32);
         return a.g2Add(b).serializeG2();
     }
 
     function g2Mul(bytes calldata args) external view returns (bytes memory) {
-        B12_377Lib.G2Point memory a = args.parseG2(0);
+        B12.G2Point memory a = args.parseG2(0);
         uint256 scalar = args.ref(0).indexUint(8 * 32, 32);
-        return a.g2Mul(scalar).serializeG2();
+        a.g2Mul(scalar);
+        return a.serializeG2();
     }
 
     function g2MultiExp(bytes calldata args)
@@ -132,8 +139,8 @@ contract Passthrough {
         bytes29 ref = args.ref(0);
 
 
-            B12_377Lib.G2MultiExpArg[] memory input
-         = new B12_377Lib.G2MultiExpArg[](args.length / 288);
+        B12.G2MultiExpArg[] memory input
+         = new B12.G2MultiExpArg[](args.length / 288);
 
         for (uint256 i = 0; i < args.length / 288; i += 1) {
             uint256 idx = i * 288;
@@ -149,7 +156,7 @@ contract Passthrough {
             input[i].scalar = ref.indexUint(idx + 0x100, 32);
         }
 
-        return B12_377Lib.g2MultiExp(input).serializeG2();
+        return CeloB12_377Lib.g2MultiExp(input).serializeG2();
     }
 
     function testParseG1(bytes calldata arg)
@@ -157,7 +164,7 @@ contract Passthrough {
         pure
         returns (uint256[4] memory ret)
     {
-        B12_377Lib.G1Point memory a = arg.parseG1(0);
+        B12.G1Point memory a = arg.parseG1(0);
         ret[0] = a.X.a;
         ret[1] = a.X.b;
         ret[2] = a.Y.a;
@@ -170,7 +177,7 @@ contract Passthrough {
         uint256 y,
         uint256 z
     ) external pure returns (bytes memory) {
-        B12_377Lib.G1Point memory a;
+        B12.G1Point memory a;
         a.X.a = w;
         a.X.b = x;
         a.Y.a = y;
@@ -184,7 +191,7 @@ contract Passthrough {
         pure
         returns (uint256[8] memory ret)
     {
-        B12_377Lib.G2Point memory a = arg.parseG2(0);
+        B12.G2Point memory a = arg.parseG2(0);
         ret[0] = a.X.a.a;
         ret[1] = a.X.a.b;
         ret[2] = a.X.b.a;
@@ -205,7 +212,7 @@ contract Passthrough {
         uint256 yba,
         uint256 ybb
     ) external pure returns (bytes memory) {
-        B12_377Lib.G2Point memory a;
+        B12.G2Point memory a;
         a.X.a.a = xaa;
         a.X.a.b = xab;
         a.X.b.a = xba;

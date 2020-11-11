@@ -4,7 +4,8 @@
 
 pragma solidity ^0.6.8;
 
-import {B12_381Lib} from "./B12Lib.sol";
+import {B12_381Lib} from "./B12.sol";
+import {B12} from "./B12.sol";
 import {IDepositContract} from "./IDepositContract.sol";
 import {TypedMemView} from "@summa-tx/memview.sol/contracts/TypedMemView.sol";
 import {SafeMath} from "@summa-tx/memview.sol/contracts/SafeMath.sol";
@@ -13,11 +14,11 @@ contract DepositVerifier {
     using SafeMath for uint256;
     using TypedMemView for bytes;
     using TypedMemView for bytes29;
-    using B12_381Lib for bytes;
-    using B12_381Lib for B12_381Lib.Fp;
-    using B12_381Lib for B12_381Lib.Fp2;
-    using B12_381Lib for B12_381Lib.G1Point;
-    using B12_381Lib for B12_381Lib.G2Point;
+    using B12 for bytes;
+    using B12_381Lib for B12.Fp;
+    using B12_381Lib for B12.Fp2;
+    using B12_381Lib for B12.G1Point;
+    using B12_381Lib for B12.G2Point;
 
     uint256 constant PUBLIC_KEY_LENGTH = 48;
     uint256 constant SIGNATURE_LENGTH = 96;
@@ -201,7 +202,7 @@ contract DepositVerifier {
     function hashToField(bytes32 message)
         internal
         pure
-        returns (B12_381Lib.Fp2[2] memory result)
+        returns (B12.Fp2[2] memory result)
     {
         bytes memory some_bytes = expandMessage(message);
         result[0] = some_bytes.parseFp2(0);
@@ -211,32 +212,32 @@ contract DepositVerifier {
     function hashToCurve(bytes32 message)
         internal
         view
-        returns (B12_381Lib.G2Point memory)
+        returns (B12.G2Point memory)
     {
-        B12_381Lib.Fp2[2] memory elements = hashToField(message);
-        B12_381Lib.G2Point memory firstPoint = elements[0].mapToG2();
-        B12_381Lib.G2Point memory secondPoint = elements[1].mapToG2();
+        B12.Fp2[2] memory elements = hashToField(message);
+        B12.G2Point memory firstPoint = elements[0].mapToG2();
+        B12.G2Point memory secondPoint = elements[1].mapToG2();
         return firstPoint.g2Add(secondPoint);
     }
 
-    function decodeG1Point(bytes memory encodedX, B12_381Lib.Fp memory Y)
+    function decodeG1Point(bytes memory encodedX, B12.Fp memory Y)
         private
         pure
-        returns (B12_381Lib.G1Point memory)
+        returns (B12.G1Point memory)
     {
         encodedX[0] = encodedX[0] & BLS_BYTE_WITHOUT_FLAGS_MASK;
-        B12_381Lib.Fp memory X = encodedX.parseCompactFp(0);
-        return B12_381Lib.G1Point(X, Y);
+        B12.Fp memory X = encodedX.parseCompactFp(0);
+        return B12.G1Point(X, Y);
     }
 
-    function decodeG2Point(bytes memory encodedX, B12_381Lib.Fp2 memory Y)
+    function decodeG2Point(bytes memory encodedX, B12.Fp2 memory Y)
         private
         pure
-        returns (B12_381Lib.G2Point memory)
+        returns (B12.G2Point memory)
     {
         encodedX[0] = encodedX[0] & BLS_BYTE_WITHOUT_FLAGS_MASK;
-        B12_381Lib.Fp2 memory X = encodedX.parseCompactFp2(0);
-        return B12_381Lib.G2Point(X, Y);
+        B12.Fp2 memory X = encodedX.parseCompactFp2(0);
+        return B12.G2Point(X, Y);
     }
 
     function blsSignatureIsValid(
@@ -246,12 +247,12 @@ contract DepositVerifier {
         bytes memory publicKeyYCoordinateBytes,
         bytes memory signatureYCoordinateBytes
     ) internal view returns (bool) {
-        B12_381Lib.Fp memory publicKeyYCoordinate = publicKeyYCoordinateBytes
+        B12.Fp memory publicKeyYCoordinate = publicKeyYCoordinateBytes
             .parseFp(0);
-        B12_381Lib.Fp2 memory signatureYCoordinate = signatureYCoordinateBytes
+        B12.Fp2 memory signatureYCoordinate = signatureYCoordinateBytes
             .parseFp2(0);
 
-        B12_381Lib.PairingArg[] memory args = new B12_381Lib.PairingArg[](2);
+        B12.PairingArg[] memory args = new B12.PairingArg[](2);
 
         args[0].g1 = decodeG1Point(encodedPublicKey, publicKeyYCoordinate);
         args[0].g2 = decodeG2Point(encodedSignature, signatureYCoordinate);
