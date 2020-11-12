@@ -239,7 +239,7 @@ contract Passthrough {
     }
 
     function fpNormal2Test(uint256 a, uint256 idx) external view returns (uint256, uint256) {
-        B12.Fp memory res = B12.fpNormal2(a, idx);
+        B12.Fp memory res = B12.fpNormal2(B12.Fp(0,a), idx);
         return (res.a, res.b);
     }
 }

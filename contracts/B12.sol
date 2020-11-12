@@ -62,9 +62,29 @@ library B12 {
         return FpEq(a.a, b.a) && FpEq(a.b, b.b);
     }
 
+    function fpAdd2(uint256 a, uint256 b) internal pure returns (Fp memory) {
+        return fpAdd(Fp(0,a), Fp(0,b));
+    }
+
+    function fpAdd3(uint256 a, uint256 b, uint256 c) internal pure returns (Fp memory) {
+        return fpAdd(Fp(0,a), fpAdd(Fp(0,b), Fp(0,c)));
+    }
+
+    function fpAdd4(uint256 a, uint256 b, uint256 c, uint256 d) internal pure returns (Fp memory) {
+        return fpAdd(Fp(0,a), fpAdd(Fp(0,b), fpAdd(Fp(0,c), Fp(0,d))));
+    }
+
     function fpAdd(Fp memory a, Fp memory b) internal pure returns (Fp memory) {
         uint256 bb = a.b + b.b;
         uint256 aa = a.a + b.a + (bb >= a.b && bb >= b.b ? 0 : 1);
+        return Fp(aa, bb);
+    }
+
+    function fpSub(Fp memory a, Fp memory b) internal pure returns (Fp memory) {
+        Fp memory p = Fp(0x1ae3a4617c510eac63b05c06ca1493b, 0x1a22d9f300f5138f1ef3622fba094800170b5d44300000008508c00000000001);
+        Fp memory x = fpAdd(a, p);
+        uint256 bb = x.b - b.b;
+        uint256 aa = x.a - b.a - (bb <= x.b ? 0 : 1);
         return Fp(aa, bb);
     }
 
@@ -103,27 +123,30 @@ library B12 {
         return Fp(result1, result2);
     }
 
-    function fpModExp2(uint256 base, uint256 idx, uint exponent, Fp memory modulus) internal view returns (Fp memory) {
+    function fpModExp2(Fp memory base, uint idx, uint exponent, Fp memory modulus) internal view returns (Fp memory) {
+        uint256 base1 = base.a;
+        uint256 base2 = base.b;
         uint256 modulus1 = modulus.a;
         uint256 modulus2 = modulus.b;
-        bytes memory arg = new bytes(3*32+32+64+32+idx);
+        bytes memory arg = new bytes(3*32+62+64+32+idx);
         bytes memory ret = new bytes(64);
         uint256 result1;
         uint256 result2;
         assembly {
             // length of base, exponent, modulus
-            mstore(add(arg, 0x20), add(0x20,idx))
+            mstore(add(arg, 0x20), add(0x40,idx))
             mstore(add(arg, 0x40), 0x20)
             mstore(add(arg, 0x60), 0x40)
 
             // assign base, exponent, modulus
-            mstore(add(arg, 0x80), base)
-            mstore(add(arg, add(idx,0xa0)), exponent)
-            mstore(add(arg, add(idx,0xc0)), modulus1)
-            mstore(add(arg, add(idx,0xe0)), modulus2)
+            mstore(add(arg, 0x80), base1)
+            mstore(add(arg, 0xa0), base2)
+            mstore(add(arg, add(idx,0xc0)), exponent)
+            mstore(add(arg, add(idx,0xe0)), modulus1)
+            mstore(add(arg, add(idx,0x100)), modulus2)
 
             // call the precompiled contract BigModExp (0x05)
-            let success := staticcall(gas(), 0x05, add(arg, 0x20), add(idx, 0xe0), add(ret, 0x20), 0x40)
+            let success := staticcall(gas(), 0x05, add(arg, 0x20), add(idx, 0x100), add(ret, 0x20), 0x40)
             switch success
                 case 0 {
                 revert(0x0, 0x0)
@@ -144,33 +167,48 @@ library B12 {
         uint256 b2 = uint128(b.b >> 128);
         uint256 b3 = uint128(b.a);
         uint256 b4 = uint128(b.a >> 128);
-        /*
-        uint256 r1 = a1*b1;
-        uint256 r2 = a1*b2 + a2*b1;
-        uint256 r3 = a1*b3 + a2*b2 * a3*b1;
-        uint256 r4 = a1*b4 + a2*b3 * a3*b2 + a4*b1;
-        uint256 r5 = a2*b4 + a3*b3 + a4*b2;
-        uint256 r6 = a3*b4 + a4*b3;
-        uint256 r7 = a4*b4;
-        */
-        Fp memory res = fpNormal2(a1*b1, 0);
-        res = fpAdd(res, fpNormal2(a1*b2 + a2*b1, 16));
-        res = fpAdd(res, fpNormal2(a1*b3 + a2*b2 * a3*b1, 32));
-        res = fpAdd(res, fpNormal2(a1*b4 + a2*b3 * a3*b2 + a4*b1, 48));
-        res = fpAdd(res, fpNormal2(a2*b4 + a3*b3 + a4*b2, 64));
-        res = fpAdd(res, fpNormal2(a3*b4 + a4*b3, 96));
-        res = fpAdd(res, fpNormal2(a4*b4, 128));
+        Fp memory res = fpNormal2(Fp(0,a1*b1), 0);
+        res = fpAdd(res, fpNormal2(fpAdd2(a1*b2, a2*b1), 16));
+        res = fpAdd(res, fpNormal2(fpAdd3(a1*b3, a2*b2, a3*b1), 32));
+        res = fpAdd(res, fpNormal2(fpAdd4(a1*b4, a2*b3, a3*b2, a4*b1), 48));
+        res = fpAdd(res, fpNormal2(fpAdd3(a2*b4, a3*b3, a4*b2), 64));
+        res = fpAdd(res, fpNormal2(fpAdd2(a3*b4, a4*b3), 96));
+        res = fpAdd(res, fpNormal2(Fp(0,a4*b4), 128));
         return fpNormal(res);
-        // return fpAdd(r1, fpAdd(r2, fpAdd(r3, r4)));
     }
 
-    function fpNormal2(uint256 a, uint idx) internal view returns (Fp memory) {
+    function fp2Normal(Fp2 memory a) internal view returns (Fp2 memory) {
+        return Fp2(fpNormal(a.a), fpNormal(a.b));
+    }
+
+    function fp2Add(Fp2 memory a, Fp2 memory b) internal pure returns (Fp2 memory) {
+        return Fp2(fpAdd(a.a, b.a), fpAdd(a.b, b.b));
+    }
+
+    function fp2Mul(Fp2 memory a, Fp2 memory b) internal view returns (Fp2 memory) {
+        Fp memory one = Fp(0x8d6661e2fdf49a4cf495bf803c84e8, 0x7b4e97b76e7c63059f7db3a98a7d3ff251409f837fffffb102cdffffffffff68);
+        Fp memory non_residue = Fp(0x9974a2c0945ad20baf1ec35813f9eb, 0xcbbcbd50d97c38022072420fbfa0504497d39cf6e000018bfc0b8000000002fa);
+
+        Fp memory v0 = fpMul(a.a, b.a);
+        Fp memory v1 = fpMul(a.b, b.b);
+
+        Fp memory res1 = fpAdd(a.b, a.a);
+        res1 = fpMul(res1, fpAdd(b.a, b.b));
+        res1 = fpSub(res1, v0);
+        res1 = fpSub(res1, v1);
+        Fp memory res0 = fpAdd(v0, fpMul(v1, non_residue));
+        return Fp2(res0, res1);
+    }
+
+    function fpNormal2(Fp memory a, uint idx) internal view returns (Fp memory) {
         Fp memory p = Fp(0x1ae3a4617c510eac63b05c06ca1493b, 0x1a22d9f300f5138f1ef3622fba094800170b5d44300000008508c00000000001);
         return fpModExp2(a, idx, 1, p);
     }
 
     function fpNormal(Fp memory a) internal view returns (Fp memory) {
         Fp memory p = Fp(0x1ae3a4617c510eac63b05c06ca1493b, 0x1a22d9f300f5138f1ef3622fba094800170b5d44300000008508c00000000001);
+        Fp memory one = Fp(0x8d6661e2fdf49a4cf495bf803c84e8, 0x7b4e97b76e7c63059f7db3a98a7d3ff251409f837fffffb102cdffffffffff68);
+        Fp memory non_residue = Fp(0x9974a2c0945ad20baf1ec35813f9eb, 0xcbbcbd50d97c38022072420fbfa0504497d39cf6e000018bfc0b8000000002fa);
         return fpModExp(a, 1, p);
     }
 
