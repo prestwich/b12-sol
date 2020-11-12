@@ -12,6 +12,11 @@ function split(n) {
   return ["0x"+str.substr(-128, 64), "0x"+str.substr(-64)]
 }
 
+function split2(n) {
+  let str = n.toString(16).padStart(96, '0')
+  console.log(`B12.Fp(0x${str.substr(0, 32)}, 0x${str.substr(32, 64)})`)
+}
+
 function combine(a, b) {
   let aa = a._hex.substr(2).padStart(64, '0')
   let bb = b._hex.substr(2).padStart(64, '0')
@@ -76,8 +81,14 @@ describe("BLS12-377", function () {
       let [b1, b2] = split(b)
       let [r1, r2] = await instance.fpMulTest(a1, a2, b1, b2)
       let r = combine(r1, r2)
-      console.log((a*b)%base, r)
+      // console.log((a*b)%base, r)
+      assert((a*b)%base == r)
     }
+  });
+
+  it('fp2Mul works', async () => {
+    let [a1, a2, b1, b2] = await instance.fp2MulTest()
+    console.log(combine(a1,a2), combine(b1,b2))
   });
 
   /*

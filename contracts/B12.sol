@@ -62,6 +62,11 @@ library B12 {
         return FpEq(a.a, b.a) && FpEq(a.b, b.b);
     }
 
+    function fp2Gt(Fp2 memory a, Fp2 memory b) internal pure returns (bool) {
+        if (FpEq(a.b, b.b)) return fpGt(a.a, b.a);
+        else return fpGt(a.b, b.b);
+    }
+
     function fpAdd2(uint256 a, uint256 b) internal pure returns (Fp memory) {
         return fpAdd(Fp(0,a), Fp(0,b));
     }
@@ -186,8 +191,7 @@ library B12 {
     }
 
     function fp2Mul(Fp2 memory a, Fp2 memory b) internal view returns (Fp2 memory) {
-        Fp memory one = Fp(0x8d6661e2fdf49a4cf495bf803c84e8, 0x7b4e97b76e7c63059f7db3a98a7d3ff251409f837fffffb102cdffffffffff68);
-        Fp memory non_residue = Fp(0x9974a2c0945ad20baf1ec35813f9eb, 0xcbbcbd50d97c38022072420fbfa0504497d39cf6e000018bfc0b8000000002fa);
+        Fp memory non_residue = B12.Fp(0x01ae3a4617c510eac63b05c06ca1493b, 0x1a22d9f300f5138f1ef3622fba094800170b5d44300000008508bffffffffffc);
 
         Fp memory v0 = fpMul(a.a, b.a);
         Fp memory v1 = fpMul(a.b, b.b);
@@ -206,9 +210,6 @@ library B12 {
     }
 
     function fpNormal(Fp memory a) internal view returns (Fp memory) {
-        Fp memory p = Fp(0x1ae3a4617c510eac63b05c06ca1493b, 0x1a22d9f300f5138f1ef3622fba094800170b5d44300000008508c00000000001);
-        Fp memory one = Fp(0x8d6661e2fdf49a4cf495bf803c84e8, 0x7b4e97b76e7c63059f7db3a98a7d3ff251409f837fffffb102cdffffffffff68);
-        Fp memory non_residue = Fp(0x9974a2c0945ad20baf1ec35813f9eb, 0xcbbcbd50d97c38022072420fbfa0504497d39cf6e000018bfc0b8000000002fa);
         return fpModExp(a, 1, p);
     }
 
