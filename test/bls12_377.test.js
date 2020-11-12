@@ -7,6 +7,16 @@ const g2Add = require("./bls12377G2Add_matter.json");
 const g2Mul = require("./bls12377G2Mul_matter.json");
 const g2MultiExp = require("./bls12377G2MultiExp_matter.json");
 
+function split(n) {
+  let str = n.toString(16).padStart(128, '0')
+  return ["0x"+str.substr(-128, 64), "0x"+str.substr(-64)]
+}
+
+function combine(a, b) {
+  let aa = a._hex.substr(2).padStart(64, '0')
+  let bb = b._hex.substr(2).padStart(64, '0')
+  return BigInt("0x"+aa+bb)
+}
 
 describe("BLS12-377", function () {
   let instance;
@@ -18,6 +28,59 @@ describe("BLS12-377", function () {
     instance = await Passthrough.deploy();
   });
 
+  it('fpNormal works', async () => {
+    let base = 0x1ae3a4617c510eac63b05c06ca1493b1a22d9f300f5138f1ef3622fba094800170b5d44300000008508c00000000001n
+    let cases = [
+      0x5d432D9AA925210DfbCfd967E884C2168n,
+      0x5d432D9AA925210DfbCfd967E884C216853dC0175d432D9AA934343434343434343434342521e0DfbCfd967E884C216853dC017n,
+      0x1235d432D9AA925210DfbCfd967E884C216853dC0175d432D9AA934343434343434343434342521e0DfbCfd967E884C216853dC017n,
+    ]
+    for (let a of cases) {
+      let [a1, a2] = split(a)
+      let [r1, r2] = await instance.fpNormalTest(a1, a2)
+      let r = combine(r1, r2)
+      // console.log(a % base, r, a%base == r)
+      assert(a%base == r)
+    }
+  });
+
+  it('fpNormal2 works', async () => {
+    let base = 0x1ae3a4617c510eac63b05c06ca1493b1a22d9f300f5138f1ef3622fba094800170b5d44300000008508c00000000001n
+    let cases = [
+      [0x5d432D9AA925210DfbCfd967E884C2168n,0n],
+      [0x5d432D9AA925210DfbCfd967E884C2168n,16n],
+      [0x5d432D9AA925210DfbCfd967E884C2168n,32n],
+      [0x5d432D9AA925210DfbCfd967E884C2168n,64n],
+    ]
+    for (let [a,idx] of cases) {
+      let [r1, r2] = await instance.fpNormal2Test(a, idx.toString())
+      // console.log(r1, r2)
+      let r = combine(r1, r2)
+      // console.log((a*(2n ** (8n*idx)))%base, r)
+      assert((a*(2n ** (8n*idx)))%base == r)
+    }
+  });
+
+  it('fpMul works', async () => {
+    let base = 0x1ae3a4617c510eac63b05c06ca1493b1a22d9f300f5138f1ef3622fba094800170b5d44300000008508c00000000001n
+    let cases = [
+      [0x17n, 0xC017n],
+      [0x12323232327n, 0xC02323232317n],
+      [0x1232323adadadad2327n, 0xC023adadadad23232317n],
+      [0x1232323adadadad2327e3e3e3e3en, 0xC023adae3e3e3e3dadad23232317n],
+      [0x12323231234567890adadadad2327e3e3e3e3en, 0xC023ada1234567890e3e3e3e3dadad23232317n],
+      [0x5d432D9AA925210DfbCfd967E884C216853dC0175d432D9AA92521e0DfbCfd967E884C216853dC017n, 0x5d432D9AA925210DfbCfd967E884600853dC0175d432D9AA9252e10DfbCfd967E884C216853dC017n]
+    ]
+    for (let [a,b] of cases) {
+      let [a1, a2] = split(a)
+      let [b1, b2] = split(b)
+      let [r1, r2] = await instance.fpMulTest(a1, a2, b1, b2)
+      let r = combine(r1, r2)
+      console.log((a*b)%base, r)
+    }
+  });
+
+  /*
   it("should g1Add", async () => {
     for (const test of g1Add) {
         assert.include(
@@ -95,4 +158,5 @@ describe("BLS12-377", function () {
   it.skip('should serializeG2', async () => {
     console.log(await instance.testSerializeG2(1, 2, 3, 4));
   });
+  */
 });

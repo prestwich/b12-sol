@@ -224,4 +224,22 @@ contract Passthrough {
 
         return a.serializeG2();
     }
+
+    function fpMulTest(uint256 a1, uint256 a2, uint256 b1, uint256 b2) external view returns (uint256, uint256) {
+        B12.Fp memory a = B12.Fp(a1, a2);
+        B12.Fp memory b = B12.Fp(b1, b2);
+        B12.Fp memory res = B12.fpMul(a, b);
+        return (res.a, res.b);
+    }
+
+    function fpNormalTest(uint256 a1, uint256 a2) external view returns (uint256, uint256) {
+        B12.Fp memory a = B12.Fp(a1, a2);
+        B12.Fp memory res = B12.fpNormal(a);
+        return (res.a, res.b);
+    }
+
+    function fpNormal2Test(uint256 a, uint256 idx) external view returns (uint256, uint256) {
+        B12.Fp memory res = B12.fpNormal2(a, idx);
+        return (res.a, res.b);
+    }
 }

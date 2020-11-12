@@ -59,6 +59,7 @@ contract SnarkEpochDataSlasher {
 
     function isValid(uint16 epoch, bytes memory data, uint256 bitmap, bytes memory sig, bytes memory hints) internal view returns (bool) {
         bytes32 config = CIP20Lib.createConfig(32, 0, 0, 0, 32, 0, 64 /* xof digest length*/, 0, 32 /* inner length */, bytes8(0), "ULforxof");
+        /*
         bytes memory h = CIP20Lib.blake2XsWithConfig(config, new bytes(0), data, 32);
         bool greatest;
         B12.Fp memory x;
@@ -85,7 +86,7 @@ contract SnarkEpochDataSlasher {
         B12.PairingArg[] memory args = new B12.PairingArg[](2);
         args[0] = B12.PairingArg(sig_point, negativeP2());
         args[1] = B12.PairingArg(p, agg);
-        return CeloB12_377Lib.pairing(args);
+        return CeloB12_377Lib.pairing(args);*/
     }
 
 }
