@@ -31,44 +31,14 @@ contract SnarkEpochDataSlasher {
         return B12.G2Point(x, y);
     }
 
-    function mapToG1(B12.Fp memory x, B12.Fp memory hint1, B12.Fp memory hint2, bool greatest)
-        internal
-        view
-        returns (B12.G1Point memory) {
-        B12.Fp memory base = B12.Fp(0x1ae3a4617c510eac63b05c06ca1493b, 0x1a22d9f300f5138f1ef3622fba094800170b5d44300000008508c00000000001);
-        B12.Fp memory one = B12.Fp(0, 1);
-        B12.Fp memory res = B12.fpAdd(B12.fpModExp(x, 3, base), one);
-        B12.Fp memory sqhint1 = B12.fpModExp(hint1, 2, base);
-        B12.Fp memory sqhint2 = B12.fpModExp(hint2, 2, base);
-        require(B12.FpEq(sqhint1, res));
-        require(B12.FpEq(sqhint2, res));
-        require(B12.fpGt(sqhint1, sqhint2));
-        return B12.G1Point(x, greatest ? hint1 : hint2);
-    }
-
     function mapToG1Scaled(B12.Fp memory x, B12.Fp memory hint1, B12.Fp memory hint2, bool greatest)
         internal
         view
         returns (B12.G1Point memory) {
-        B12.G1Point memory p = mapToG1(x, hint1, hint2, greatest);
+        B12.G1Point memory p = B12.mapToG1(x, hint1, hint2, greatest);
         B12.G1Point memory q = CeloB12_377Lib.g1Mul(p, 30631250834960419227450344600217059328);
         // TODO: check that q != 0
         return q;
-    }
-
-    function mapToG2(B12.Fp2 memory x, B12.Fp2 memory hint1, B12.Fp2 memory hint2, bool greatest)
-        internal
-        view
-        returns (B12.G2Point memory) {
-        B12.Fp2 memory one = B12.Fp2(B12.Fp(0, 1), B12.Fp(0, 0));
-        B12.Fp2 memory res = B12.fp2Add(B12.fp2Mul(x, B12.fp2Mul(x, x)), one);
-        B12.Fp2 memory sqhint1 = B12.fp2Mul(hint1, hint1);
-        B12.Fp2 memory sqhint2 = B12.fp2Mul(hint2, hint2);
-        require(B12.Fp2Eq(sqhint1, res));
-        require(B12.Fp2Eq(sqhint2, res));
-        require(B12.fp2Gt(sqhint1, sqhint2));
-        B12.G2Point memory p = B12.G2Point(x, greatest ? hint1 : hint2);
-        return p;
     }
 
     function slash2(uint16 epoch, bytes memory data1, uint256 bitmap1, bytes memory sig1, bytes memory hint1,
@@ -78,7 +48,6 @@ contract SnarkEpochDataSlasher {
     }
 
     function getBLSPublicKey(uint16 epoch, uint i) internal view returns (B12.G2Point memory) {
-
     }
 
     function doHash(bytes memory data) internal view returns (bytes memory) {
@@ -86,12 +55,34 @@ contract SnarkEpochDataSlasher {
         return CIP20Lib.blake2XsWithConfig(config, new bytes(0), data, 32);
     }
 
+    function parsePointGen(bytes memory h, uint256 offset) internal pure returns (uint256, uint256, uint256) {
+        uint256 a = 0;
+        uint256 b = 0;
+        for (uint i = 0; i < 32; i++) {
+            uint256 byt = uint256(uint8(h[offset+i]));
+            b = b + (byt << i*8);
+        }
+        for (uint i = 0; i < 15; i++) {
+            uint256 byt = uint256(uint8(h[offset+i+32]));
+            a = a + (byt << i*8);
+        }
+        return (a, b, uint256(uint8(h[offset+47])));
+    }
+
+    function parsePoint(bytes memory h, uint256 offset) internal pure returns (B12.Fp memory, bool) {
+        (uint256 a, uint256 b, uint256 byt) = parsePointGen(h, offset);
+        a = a + ((byt&0x7f) << 47*8);
+        return (B12.Fp(a, b), byt&0xa0 != 0);
+    }
+
     function parsePoint(bytes memory h) internal pure returns (B12.Fp memory, bool) {
-        bytes29 ref1 = h.ref(0).postfix(h.length, 0);
-        uint256 a1 = ref1.indexUint(0, 32);
-        uint256 b1 = ref1.indexUint(32, 32);
-        // 512 - 377 = 135
-        return (B12.Fp(a1 >> 135, (a1 << 135) | (b1 >> 135)), (b1 >> 134) & 1 == 0);
+        return parsePoint(h, 0);
+    }
+
+    function parseRandomPoint(bytes memory h) internal pure returns (B12.Fp memory, bool) {
+        (uint256 a, uint256 b, uint256 byt) = parsePointGen(h, 0);
+        a = a + ((byt&0x01) << 47*8);
+        return (B12.Fp(a, b), byt&0x02 != 0);
     }
 
     function parsePoint2(bytes memory h) internal pure returns (B12.Fp2 memory, bool) {
@@ -110,20 +101,20 @@ contract SnarkEpochDataSlasher {
         bool greatest;
         B12.Fp memory x;
         (x, greatest) = parsePoint(h);
-        return mapToG1(x, B12.parseFp(hints, 0+idx), B12.parseFp(hints, 64+idx), greatest);
+        return B12.mapToG1(x, B12.parseFp(hints, 0+idx), B12.parseFp(hints, 64+idx), greatest);
     }
 
     function parseToG2(bytes memory h, bytes memory hint1, bytes memory hint2) internal view returns (B12.G2Point memory) {
         bool greatest;
         B12.Fp2 memory x;
         (x, greatest) = parsePoint2(h);
-        return mapToG2(x, B12.parseFp2(hint1, 0), B12.parseFp2(hint2, 0), greatest);
+        return B12.mapToG2(x, B12.parseFp2(hint1, 0), B12.parseFp2(hint2, 0), greatest);
     }
 
     function parseToG1Scaled(bytes memory h, bytes memory hints) internal view returns (B12.G1Point memory) {
         bool greatest;
         B12.Fp memory x;
-        (x, greatest) = parsePoint(h);
+        (x, greatest) = parseRandomPoint(h);
         return mapToG1Scaled(x, B12.parseFp(hints, 0), B12.parseFp(hints, 64), greatest);
     }
 

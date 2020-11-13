@@ -256,4 +256,12 @@ contract Passthrough {
         return (res.a.a, res.a.b, res.b.a, res.b.b);
     }
 
+    function testUncompress() external view returns (uint256, uint256) {
+        B12.Fp memory x = B12.Fp(0x008848defe740a67c8fc6225bf87ff54, 0x85951e2caa9d41bb188282c8bd37cb5cd5481512ffcd394eeab9b16eb21be9ef);
+        B12.Fp memory y1 = B12.Fp(0x001cefdc52b4e1eba6d3b6633bf15a76, 0x5ca326aa36b6c0b5b1db375b6a5124fa540d200dfb56a6e58785e1aaaa63715b);
+        B12.Fp memory y2 = B12.Fp(0x01914a69c5102eff1f674f5d30afeec4, 0xbd7fb348ca3e52d96d182ad44fb82305c2fe3d3634a9591afd82de55559c8ea6);
+        B12.G1Point memory res = B12.mapToG1(x, y2, y1, true);
+        return (res.Y.a, res.Y.b);
+    }
+
 }

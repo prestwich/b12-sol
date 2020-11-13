@@ -210,7 +210,38 @@ library B12 {
     }
 
     function fpNormal(Fp memory a) internal view returns (Fp memory) {
+        Fp memory p = Fp(0x1ae3a4617c510eac63b05c06ca1493b, 0x1a22d9f300f5138f1ef3622fba094800170b5d44300000008508c00000000001);
         return fpModExp(a, 1, p);
+    }
+
+    function mapToG2(Fp2 memory x, Fp2 memory hint1, Fp2 memory hint2, bool greatest)
+        internal
+        view
+        returns (G2Point memory) {
+        Fp2 memory one = Fp2(Fp(0, 1), Fp(0, 0));
+        Fp2 memory res = fp2Add(fp2Mul(x, fp2Mul(x, x)), one);
+        Fp2 memory sqhint1 = fp2Mul(hint1, hint1);
+        Fp2 memory sqhint2 = fp2Mul(hint2, hint2);
+        require(Fp2Eq(sqhint1, res), "y1 not sqrt");
+        require(Fp2Eq(sqhint2, res), "y2 not sqrt");
+        require(fp2Gt(hint1, hint2), "y1 not greatest");
+        G2Point memory p = G2Point(x, greatest ? hint1 : hint2);
+        return p;
+    }
+
+    function mapToG1(Fp memory x, Fp memory hint1, Fp memory hint2, bool greatest)
+        internal
+        view
+        returns (G1Point memory) {
+        Fp memory base = Fp(0x1ae3a4617c510eac63b05c06ca1493b, 0x1a22d9f300f5138f1ef3622fba094800170b5d44300000008508c00000000001);
+        Fp memory one = Fp(0, 1);
+        Fp memory res = fpAdd(fpModExp(x, 3, base), one);
+        Fp memory sqhint1 = fpModExp(hint1, 2, base);
+        Fp memory sqhint2 = fpModExp(hint2, 2, base);
+        require(FpEq(sqhint1, res), "y1 not sqrt");
+        require(FpEq(sqhint2, res), "y2 not sqrt");
+        require(fpGt(hint1, hint2), "y1 not greatest");
+        return G1Point(x, greatest ? hint1 : hint2);
     }
 
     function g1Eq(G1Point memory a, G1Point memory b)

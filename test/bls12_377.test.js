@@ -91,6 +91,11 @@ describe("BLS12-377", function () {
     console.log(combine(a1,a2), combine(b1,b2))
   });
 
+  it('uncompressing works', async () => {
+    let [a1, a2] = await instance.testUncompress()
+    console.log(combine(a1,a2))
+  });
+
   /*
   it("should g1Add", async () => {
     for (const test of g1Add) {
