@@ -244,6 +244,48 @@ library B12 {
         return G1Point(x, greatest ? hint1 : hint2);
     }
 
+    function parsePointGen(bytes memory h, uint256 offset) internal pure returns (uint256, uint256, uint256) {
+        uint256 a = 0;
+        uint256 b = 0;
+        for (uint i = 0; i < 32; i++) {
+            uint256 byt = uint256(uint8(h[offset+i]));
+            b = b + (byt << i*8);
+        }
+        for (uint i = 0; i < 15; i++) {
+            uint256 byt = uint256(uint8(h[offset+i+32]));
+            a = a + (byt << i*8);
+        }
+        return (a, b, uint256(uint8(h[offset+47])));
+    }
+
+    function parsePoint(bytes memory h, uint256 offset) internal pure returns (Fp memory, bool) {
+        (uint256 a, uint256 b, uint256 byt) = parsePointGen(h, offset);
+        a = a + ((byt&0x7f) << 47*8);
+        return (Fp(a, b), byt&0xa0 != 0);
+    }
+
+    function parsePoint(bytes memory h) internal pure returns (Fp memory, bool) {
+        return parsePoint(h, 0);
+    }
+
+    function parseRandomPoint(bytes memory h) internal pure returns (Fp memory, bool) {
+        (uint256 a, uint256 b, uint256 byt) = parsePointGen(h, 0);
+        a = a + ((byt&0x01) << 47*8);
+        return (Fp(a, b), byt&0x02 != 0);
+    }
+
+    function parsePoint2(bytes memory h) internal pure returns (Fp2 memory, bool) {
+        bytes29 ref1 = h.ref(0).postfix(h.length, 0);
+        // 48 bytes, 384 bits
+        uint256 a1 = ref1.indexUint(0, 32);
+        uint256 b1 = ref1.indexUint(32, 32);
+        Fp memory p1 = Fp(a1 >> 135, (a1 << 135) | (b1 >> 135));
+        uint256 a2 = ref1.indexUint(48, 32);
+        uint256 b2 = ref1.indexUint(64, 32);
+        Fp memory p2 = (Fp(a2 >> 135, (a2 << 135) | (b2 >> 135)));
+        return (Fp2(p1, p2), (b2 >> 134) & 1 == 0);
+    }
+
     function g1Eq(G1Point memory a, G1Point memory b)
         internal
         pure

@@ -92,7 +92,7 @@ library CIP20Lib {
         uint16 outputBytes
     ) internal view returns (bytes memory) {
         require(
-            key.length == uint256(config >> (8 * 30)) & 0xffff,
+            key.length == uint256(config >> (8 * 30)) & 0xff,
             "CIP20Lib/blake2XsWithConfig - Provided key length does not match key length in config"
         );
         require(
@@ -167,7 +167,6 @@ library CIP20Lib {
 
         config |= bytes32(uint256(uint64(salt))) << (8 * 8);
         config |= bytes32(uint256(uint64(personalize))) << (8 * 0);
-
         return config;
     }
 
@@ -182,7 +181,8 @@ library CIP20Lib {
     ) private pure returns (bytes32) {
         require(offset <= 31, "CIP20Lib/writeU8 -- out of bounds write");
         uint8 shift = 8 * (32 - 1 - offset);
-        return bytes32(uint256(b) | (toWrite << shift));
+        bytes32 res = bytes32(uint256(b) | (uint256(toWrite) << shift));
+        return res;
     }
 
     function writeLEU32(

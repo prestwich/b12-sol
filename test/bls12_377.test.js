@@ -96,6 +96,18 @@ describe("BLS12-377", function () {
     console.log(combine(a1,a2))
   });
 
+  it('deserialization works', async () => {
+    let buf = Buffer.from('efe91bb26eb1b9ea4e39cdff121548d55ccb37bdc8828218bb419daa2c1e958554ff87bf2562fcc8670a74fede488800', 'hex')
+    let [a1, a2, b] = await instance.testDeserialize(buf)
+    console.log(combine(a1,a2), b)
+  });
+
+  it('deserialization works', async () => {
+    let buf = Buffer.from('efe91bb26eb1b9ea4e39cdff121548d55ccb37bdc8828218bb419daa2c1e958554ff87bf2562fcc8670a74fede488880', 'hex')
+    let [a1, a2, b] = await instance.testDeserialize(buf)
+    console.log(combine(a1,a2), b)
+  });
+
   /*
   it("should g1Add", async () => {
     for (const test of g1Add) {

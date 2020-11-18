@@ -51,70 +51,29 @@ contract SnarkEpochDataSlasher {
     }
 
     function doHash(bytes memory data) internal view returns (bytes memory) {
-        bytes32 config = CIP20Lib.createConfig(32, 0, 0, 0, 32, 0, 64 /* xof digest length*/, 0, 32 /* inner length */, bytes8(0), "ULforxof");
-        return CIP20Lib.blake2XsWithConfig(config, new bytes(0), data, 32);
-    }
-
-    function parsePointGen(bytes memory h, uint256 offset) internal pure returns (uint256, uint256, uint256) {
-        uint256 a = 0;
-        uint256 b = 0;
-        for (uint i = 0; i < 32; i++) {
-            uint256 byt = uint256(uint8(h[offset+i]));
-            b = b + (byt << i*8);
-        }
-        for (uint i = 0; i < 15; i++) {
-            uint256 byt = uint256(uint8(h[offset+i+32]));
-            a = a + (byt << i*8);
-        }
-        return (a, b, uint256(uint8(h[offset+47])));
-    }
-
-    function parsePoint(bytes memory h, uint256 offset) internal pure returns (B12.Fp memory, bool) {
-        (uint256 a, uint256 b, uint256 byt) = parsePointGen(h, offset);
-        a = a + ((byt&0x7f) << 47*8);
-        return (B12.Fp(a, b), byt&0xa0 != 0);
-    }
-
-    function parsePoint(bytes memory h) internal pure returns (B12.Fp memory, bool) {
-        return parsePoint(h, 0);
-    }
-
-    function parseRandomPoint(bytes memory h) internal pure returns (B12.Fp memory, bool) {
-        (uint256 a, uint256 b, uint256 byt) = parsePointGen(h, 0);
-        a = a + ((byt&0x01) << 47*8);
-        return (B12.Fp(a, b), byt&0x02 != 0);
-    }
-
-    function parsePoint2(bytes memory h) internal pure returns (B12.Fp2 memory, bool) {
-        bytes29 ref1 = h.ref(0).postfix(h.length, 0);
-        // 48 bytes, 384 bits
-        uint256 a1 = ref1.indexUint(0, 32);
-        uint256 b1 = ref1.indexUint(32, 32);
-        B12.Fp memory p1 = B12.Fp(a1 >> 135, (a1 << 135) | (b1 >> 135));
-        uint256 a2 = ref1.indexUint(48, 32);
-        uint256 b2 = ref1.indexUint(64, 32);
-        B12.Fp memory p2 = (B12.Fp(a2 >> 135, (a2 << 135) | (b2 >> 135)));
-        return (B12.Fp2(p1, p2), (b2 >> 134) & 1 == 0);
+        bytes32 config1 = CIP20Lib.createConfig(32 /* digest size */, 0, 0, 0, 32 /* leaf length */, 0 /* node offset */, 64 /* xof digest length*/, 0, 32 /* inner length */, bytes8(0), "ULforxof");
+        bytes32 config2 = CIP20Lib.createConfig(32 /* digest size */, 0, 0, 0, 32 /* leaf length */, 1, 64 /* xof digest length*/, 0, 32 /* inner length */, bytes8(0), "ULforxof");
+        return abi.encodePacked(CIP20Lib.blake2sWithConfig(config1, "", data), CIP20Lib.blake2sWithConfig(config2, "", data));
     }
 
     function parseToG1(bytes memory h, bytes memory hints, uint idx) internal view returns (B12.G1Point memory) {
         bool greatest;
         B12.Fp memory x;
-        (x, greatest) = parsePoint(h);
+        (x, greatest) = B12.parsePoint(h);
         return B12.mapToG1(x, B12.parseFp(hints, 0+idx), B12.parseFp(hints, 64+idx), greatest);
     }
 
     function parseToG2(bytes memory h, bytes memory hint1, bytes memory hint2) internal view returns (B12.G2Point memory) {
         bool greatest;
         B12.Fp2 memory x;
-        (x, greatest) = parsePoint2(h);
+        (x, greatest) = B12.parsePoint2(h);
         return B12.mapToG2(x, B12.parseFp2(hint1, 0), B12.parseFp2(hint2, 0), greatest);
     }
 
     function parseToG1Scaled(bytes memory h, bytes memory hints) internal view returns (B12.G1Point memory) {
         bool greatest;
         B12.Fp memory x;
-        (x, greatest) = parseRandomPoint(h);
+        (x, greatest) = B12.parseRandomPoint(h);
         return mapToG1Scaled(x, B12.parseFp(hints, 0), B12.parseFp(hints, 64), greatest);
     }
 

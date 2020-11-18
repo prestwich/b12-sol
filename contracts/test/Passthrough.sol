@@ -264,4 +264,9 @@ contract Passthrough {
         return (res.Y.a, res.Y.b);
     }
 
+    function testDeserialize(bytes memory h) public pure returns (uint256, uint256, bool) {
+        (B12.Fp memory p, bool b) = B12.parsePoint(h);
+        return (p.a, p.b, b);
+    }
+
 }
