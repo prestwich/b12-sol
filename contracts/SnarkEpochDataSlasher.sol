@@ -12,11 +12,29 @@ contract SnarkEpochDataSlasher {
     using TypedMemView for bytes;
     using TypedMemView for bytes29;
 
-    function slash(uint16 epoch, uint8 counter1, uint32 maximum_non_signers1, bytes memory bhhash1, uint256 bitmap1, bytes memory sig1, bytes memory hint1,
-         uint8 counter2, uint32 maximum_non_signers2, bytes memory bhhash2, uint256 bitmap2, bytes memory sig2, bytes memory hint2) public view {
-        bytes memory data1 = abi.encodePacked(counter1, epoch, maximum_non_signers1, bhhash1);
-        bytes memory data2 = abi.encodePacked(counter2, epoch, maximum_non_signers2, bhhash2);
-        slash2(epoch, data1, bitmap1, sig1, hint1, data2, bitmap2, sig2, hint2);
+    function reverse(uint8 a) public pure returns (uint8) {
+        uint8 res = 0;
+        for (uint8 i = 0; i < 8; i++) {
+            res = res | ((a&1) << (7-i));
+            a = a >> 1;
+        }
+        return res;
+    }
+
+    function epochFromExtraData(bytes memory extra) public pure returns (uint16) {
+        uint8 b1 = uint8(extra[extra.length-1]);
+        uint8 b2 = uint8(extra[extra.length-2]);
+        return uint16(reverse(b2))*256 + uint16(reverse(b1));
+    }
+
+    function slash(bytes memory extra1, bytes memory bhhash1, uint256 bitmap1, bytes memory sig1, bytes memory hint1,
+         bytes memory extra2, bytes memory bhhash2, uint256 bitmap2, bytes memory sig2, bytes memory hint2) public view {
+        bytes memory data1 = abi.encodePacked(extra1, bhhash1);
+        bytes memory data2 = abi.encodePacked(extra2, bhhash2);
+        uint16 epoch1 = epochFromExtraData(extra1);
+        uint16 epoch2 = epochFromExtraData(extra2);
+        require(epoch1 == epoch2, "Not on same epoch");
+        slash2(epoch1, data1, bitmap1, sig1, hint1, data2, bitmap2, sig2, hint2);
     }
 
     function negativeP2() internal pure returns (B12.G2Point memory) {
@@ -35,7 +53,7 @@ contract SnarkEpochDataSlasher {
         internal
         view
         returns (B12.G1Point memory) {
-        B12.G1Point memory p = B12.mapToG1(x, hint1, hint2, greatest);
+        B12.G1Point memory p = B12.mapToG1(x, hint1, hint2, !greatest);
         B12.G1Point memory q = CeloB12_377Lib.g1Mul(p, 30631250834960419227450344600217059328);
         // TODO: check that q != 0
         return q;
@@ -47,7 +65,19 @@ contract SnarkEpochDataSlasher {
         require(isValid(epoch, data2, bitmap2, sig2, hint2));
     }
 
+    address constant VALIDATOR_BLS = address(0xff - 20);
+    function validatorBLSPublicKeyFromSet(uint256 index, uint256 blockNumber) public view returns (bytes memory) {
+        bytes memory out;
+        bool success;
+        (success, out) = VALIDATOR_BLS.staticcall(abi.encodePacked(index, blockNumber));
+        require(success, "error calling validatorBLSPublicKeyFromSet precompile");
+        require(out.length == 192, "bad BLS public key length");
+        return out;
+    }
+
     function getBLSPublicKey(uint16 epoch, uint i) internal view returns (B12.G2Point memory) {
+        bytes memory data = validatorBLSPublicKeyFromSet(i, epoch);
+        return B12.readG2(data, 0);
     }
 
     function doHash(bytes memory data) internal view returns (bytes memory) {
@@ -63,12 +93,14 @@ contract SnarkEpochDataSlasher {
         return B12.mapToG1(x, B12.parseFp(hints, 0+idx), B12.parseFp(hints, 64+idx), greatest);
     }
 
+/*
     function parseToG2(bytes memory h, bytes memory hint1, bytes memory hint2) internal view returns (B12.G2Point memory) {
         bool greatest;
         B12.Fp2 memory x;
         (x, greatest) = B12.parsePoint2(h);
         return B12.mapToG2(x, B12.parseFp2(hint1, 0), B12.parseFp2(hint2, 0), greatest);
     }
+*/
 
     function parseToG1Scaled(bytes memory h, bytes memory hints) internal view returns (B12.G1Point memory) {
         bool greatest;
@@ -76,13 +108,6 @@ contract SnarkEpochDataSlasher {
         (x, greatest) = B12.parseRandomPoint(h);
         return mapToG1Scaled(x, B12.parseFp(hints, 0), B12.parseFp(hints, 64), greatest);
     }
-
-    mapping (address => B12.G2Point) points;
-
-    function storeValidatorKey(address addr, bytes memory key, bytes memory hint1, bytes memory hint2) public {
-        B12.G2Point memory p = parseToG2(doHash(key), hint1, hint2);
-        points[addr] = p;
-    } 
 
     function isValid(uint16 epoch, bytes memory data, uint256 bitmap, bytes memory sig, bytes memory hints) internal view returns (bool) {
         B12.G1Point memory p = parseToG1Scaled(doHash(data), hints);
@@ -102,7 +127,7 @@ contract SnarkEpochDataSlasher {
             bitmap = bitmap >> 1;
         }
         // TODO: check that there were enough signatures
-        B12.G1Point memory sig_point = parseToG1(sig, hints, 64);
+        B12.G1Point memory sig_point = B12.parseG1(sig, 0);
         B12.PairingArg[] memory args = new B12.PairingArg[](2);
         args[0] = B12.PairingArg(sig_point, negativeP2());
         args[1] = B12.PairingArg(p, agg);

@@ -108,7 +108,6 @@ describe("BLS12-377", function () {
     console.log(combine(a1,a2), b)
   });
 
-  /*
   it("should g1Add", async () => {
     for (const test of g1Add) {
         assert.include(
@@ -127,6 +126,7 @@ describe("BLS12-377", function () {
     }
   });
 
+  /*
   it('should g1MultiExp', async () => {
     for (const test of g1MultiExp) {
       assert.include(

@@ -274,16 +274,19 @@ library B12 {
         return (Fp(a, b), byt&0x02 != 0);
     }
 
-    function parsePoint2(bytes memory h) internal pure returns (Fp2 memory, bool) {
-        bytes29 ref1 = h.ref(0).postfix(h.length, 0);
-        // 48 bytes, 384 bits
-        uint256 a1 = ref1.indexUint(0, 32);
-        uint256 b1 = ref1.indexUint(32, 32);
-        Fp memory p1 = Fp(a1 >> 135, (a1 << 135) | (b1 >> 135));
-        uint256 a2 = ref1.indexUint(48, 32);
-        uint256 b2 = ref1.indexUint(64, 32);
-        Fp memory p2 = (Fp(a2 >> 135, (a2 << 135) | (b2 >> 135)));
-        return (Fp2(p1, p2), (b2 >> 134) & 1 == 0);
+    function readFp2(bytes memory h, uint256 offset) internal pure returns (Fp2 memory) {
+        Fp memory a;
+        Fp memory b;
+        bool res;
+        (a, res) = parsePoint(h, offset);
+        (b, res) = parsePoint(h, 48+offset);
+        return Fp2(a, b);
+    }
+
+    function readG2(bytes memory h, uint256 offset) internal pure returns (G2Point memory) {
+        Fp2 memory a = readFp2(h, offset);
+        Fp2 memory b = readFp2(h, 96+offset);
+        return G2Point(a, b);
     }
 
     function g1Eq(G1Point memory a, G1Point memory b)
@@ -657,12 +660,20 @@ library B12 {
     ) internal view returns (bool result) {
         uint256 len = argVec.length;
 
+        bytes memory argBytes = new bytes(0);
+        for (uint i = 0; i < len; i++) {
+            G1Point memory g1 = argVec[i].g1;
+            G2Point memory g2 = argVec[i].g2;
+            argBytes = abi.encodePacked(argBytes, g1.X.a, g1.X.b, g1.Y.a, g1.Y.b,
+             g2.X.a.a, g2.X.a.b, g2.X.b.a, g2.X.b.b, g2.Y.a.a, g2.Y.a.b, g2.Y.b.a, g2.Y.b.b);
+        }
+
         bool success;
         assembly {
             success := staticcall(
                 gasEstimate,
                 precompile,
-                add(argVec, 0x20), // the body of the array
+                add(argBytes, 0x20), // the body of the array
                 mul(384, len), // 384 bytes per arg
                 mload(0x40), // write to earliest freemem
                 32
