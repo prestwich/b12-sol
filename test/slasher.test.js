@@ -42,7 +42,7 @@ console.log(r1, y1, r2, y2)
 
 function findY(x, greatest) {
   let [a, b] = tonelli((x ** 3n + 1n) % base, base)
-  return greatest ? max(a,b) : min(a,b)
+  return [max(a,b), min(a,b)]
 }
 
 function uncompressSig(comp) {
@@ -92,7 +92,7 @@ describe("SnarkEpochDataSlasher", function () {
   });
 
   it('getting BLS key works', async () => {
-    let res = await instance.testBLSPublicKey(123, 0)
+    let res = await instance.testBLSPublicKey(1, 0)
     console.log(res)
   })
 
@@ -113,38 +113,58 @@ describe("SnarkEpochDataSlasher", function () {
     assert(x == rx && y == ry)
   })
 
-  it('hash to point', async () => {
-    let inner_hash = '0x4acae1bcbedcdc9b9576d482873baba0cf5f6afad7f0431edada90b8d8163fadc32ca426f95cd1f110fe6a3a59060e01'
-    let extra_data = '0x01000000000080ca' // counter, max nonsigners, epoch
+  it('hash to point 1', async () => {
+    let inner_hash = '0x26be7357a1b825b18f823bf3a774714f8e04c25553b5047db1e280e46317b260724026bb187134e35c681c5cbad04300'
+    let extra_data = '0x0200000000000080' // counter, max nonsigners, epoch
+    let [epoch, res, res2] = await instance.testHashing(extra_data, inner_hash)
+    console.log("hash result", res)
+    let arr = [...Buffer.from(res.substr(2), "hex")]
+    console.log(arr.slice(0,48))
+    let needed = arr.slice(0,48).reverse()
+    // Parse to point
+    needed[0] = needed[0] & 0x01
+    let x = BigInt("0x"+Buffer.from(needed).toString("hex"))
+    let [y1,y2] = findY(x)
+    console.log("x y1 y2", x, y1, y2)
+    let parsed_x = await instance.testParseToRandom(extra_data, inner_hash)
+    console.log('parsed_x', parsed_x)
+    let hints = `0x${y1.toString(16).padStart(128,0)}${y2.toString(16).padStart(128,0)}`
+    console.log('hint', hints)
+    let point = await instance.testParseToG1Scaled(extra_data, inner_hash, hints)
+    console.log('point', point)
+  })
+
+  it('hash to point 2', async () => {
+    let inner_hash = '0xff0d8dd0bfd78e6465071e4359cf7d9c4252b5206616060b7b97dd92a03f586ed5c975552c6d2eb05b326216d4dff300'
+    let extra_data = '0x0200000000000080' // counter, max nonsigners, epoch
     let [epoch, res, res2] = await instance.testHashing(extra_data, inner_hash)
     console.log(res2, res)
     let arr = [...Buffer.from(res.substr(2), "hex")]
     console.log(arr.slice(0,48))
     let needed = arr.slice(0,48).reverse()
+    needed[0] = needed[0] & 0x01
     // Parse to point
-    let greatest = (needed[0] & 0x40) == 0
-    needed[0] = (needed[0] & 0x7f) >> 7
     let x = BigInt("0x"+Buffer.from(needed).toString("hex"))
-    let y1 = findY(x, greatest)
-    let y2 = findY(x, !greatest)
-    console.log(x, y1, y2)
+    let [y1,y2] = findY(x)
+    console.log("x y1 y2", x, y1, y2)
     let hints = `0x${y1.toString(16).padStart(128,0)}${y2.toString(16).padStart(128,0)}`
-    console.log(hints)
+    console.log('hint', hints)
     let point = await instance.testParseToG1Scaled(extra_data, inner_hash, hints)
-    console.log(point)
+    console.log('point', point)
   })
 
   it('test pairing', async () => {
-    let sig = [112, 190, 148, 183, 216, 214, 235, 200, 49, 230, 29, 83, 64, 137, 68, 22, 235, 254, 184, 250, 197, 237, 118, 24, 140, 100, 123, 19, 231, 108, 154, 247, 97, 36, 16, 100, 101, 34, 2, 159, 181, 202, 29, 186, 24, 220, 8, 1]
+    let sig = [212, 56, 43, 123, 117, 175, 115, 234, 113, 187, 104, 128, 153, 5, 65, 116, 47, 137, 117, 232, 56, 247, 226, 6, 122, 135, 251, 19, 53, 57, 247, 86, 39, 115, 6, 60, 8, 53, 108, 38, 24, 109, 202, 29, 108, 235, 19, 1]
     let sig_point = uncompressSig(sig)
+    console.log("sig", sig_point)
     let [x1, x2, y1, y2] = await instance.testParseG1(sig_point)
     let rx = combine(x1,x2)
     let ry = combine(y1,y2)
     console.log(rx, ry)
-    let inner_hash = '0x4acae1bcbedcdc9b9576d482873baba0cf5f6afad7f0431edada90b8d8163fadc32ca426f95cd1f110fe6a3a59060e01'
-    let extra_data = '0x01000000000080ca' // counter, max nonsigners, epoch
+    let inner_hash = '0xff0d8dd0bfd78e6465071e4359cf7d9c4252b5206616060b7b97dd92a03f586ed5c975552c6d2eb05b326216d4dff300'
+    let extra_data = '0x0200000000000080' // counter, max nonsigners, epoch
     // this was calculated in the previous test case
-    let hint = "0x00000000000000000000000000000000010f1b21a9843f63930f0238e646a0218ed0c9651caa54249a7cd60dd7e23dc3a484cc7188024a07f9e806ccc06aeca400000000000000000000000000000000009f1f246e40d187332c0387865aa9198b52108de44abf6a84768c21e2270a3c728690d2a7fdb5f88b20b9333f95135d"
+    let hint = "0x00000000000000000000000000000000018f73b0f9f89018577c1967ba35815e988789000c8a6a4693c5701c65d0979a08a3acf13a0b77dde56fab80856375fc00000000000000000000000000000000001ec6951dcc80d26ebeec58b26bc7dc819b50f2f46aa9488b2df2135438b0660e67b052f5f488229f99147f7a9c8a05"
     let res = await instance.testValid(extra_data, inner_hash, sig_point, hint)
     console.log(res)
   })
