@@ -143,8 +143,10 @@ describe("SnarkEpochDataSlasher", function () {
     console.log(rx, ry)
     let inner_hash = '0x4acae1bcbedcdc9b9576d482873baba0cf5f6afad7f0431edada90b8d8163fadc32ca426f95cd1f110fe6a3a59060e01'
     let extra_data = '0x01000000000080ca' // counter, max nonsigners, epoch
+    // this was calculated in the previous test case
     let hint = "0x00000000000000000000000000000000010f1b21a9843f63930f0238e646a0218ed0c9651caa54249a7cd60dd7e23dc3a484cc7188024a07f9e806ccc06aeca400000000000000000000000000000000009f1f246e40d187332c0387865aa9198b52108de44abf6a84768c21e2270a3c728690d2a7fdb5f88b20b9333f95135d"
     let res = await instance.testValid(extra_data, inner_hash, sig_point, hint)
+    console.log(res)
   })
 
 })

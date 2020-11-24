@@ -664,8 +664,7 @@ library B12 {
         for (uint i = 0; i < len; i++) {
             G1Point memory g1 = argVec[i].g1;
             G2Point memory g2 = argVec[i].g2;
-            argBytes = abi.encodePacked(argBytes, g1.X.a, g1.X.b, g1.Y.a, g1.Y.b,
-             g2.X.a.a, g2.X.a.b, g2.X.b.a, g2.X.b.b, g2.Y.a.a, g2.Y.a.b, g2.Y.b.a, g2.Y.b.b);
+            argBytes = abi.encodePacked(argBytes, g1.X.a, g1.X.b, g1.Y.a, g1.Y.b, g2.X.a.a, g2.X.a.b, g2.X.b.a, g2.X.b.b, g2.Y.a.a, g2.Y.a.b, g2.Y.b.a, g2.Y.b.b);
         }
 
         bool success;
