@@ -153,7 +153,23 @@ describe("SnarkEpochDataSlasher", function () {
     console.log('point', point)
   })
 
-  it('test pairing', async () => {
+  it('test pairing 1', async () => {
+    let sig = [254, 228, 243, 96, 85, 245, 68, 102, 165, 10, 73, 208, 247, 186, 48, 190, 182, 250, 124, 182, 200, 54, 245, 188, 145, 73, 181, 220, 56, 37, 182, 81, 234, 138, 94, 175, 102, 73, 10, 205, 128, 249, 83, 86, 226, 193, 159, 1]
+    let sig_point = uncompressSig(sig)
+    console.log("sig", sig_point)
+    let [x1, x2, y1, y2] = await instance.testParseG1(sig_point)
+    let rx = combine(x1,x2)
+    let ry = combine(y1,y2)
+    console.log(rx, ry)
+    let inner_hash = '0x26be7357a1b825b18f823bf3a774714f8e04c25553b5047db1e280e46317b260724026bb187134e35c681c5cbad04300'
+    let extra_data = '0x0200000000000080' // counter, max nonsigners, epoch
+    // this was calculated in the previous test case
+    let hint = "0x000000000000000000000000000000000169655b41d8a50966842c54b2da6db193307de5591ad270fb526422e3e3562e7689dfdf8d14104b009a0a2d4d7c0fc5000000000000000000000000000000000044d4ead5ec6be15fb6d96bb9c6db8986f25c0da7da411e23a0fe0cd625f1d1a0817d64a2ebefb5846eb5d2b283f03c"
+    let res = await instance.testValid(extra_data, inner_hash, sig_point, hint)
+    console.log(res)
+  })
+
+  it('test pairing 2', async () => {
     let sig = [212, 56, 43, 123, 117, 175, 115, 234, 113, 187, 104, 128, 153, 5, 65, 116, 47, 137, 117, 232, 56, 247, 226, 6, 122, 135, 251, 19, 53, 57, 247, 86, 39, 115, 6, 60, 8, 53, 108, 38, 24, 109, 202, 29, 108, 235, 19, 1]
     let sig_point = uncompressSig(sig)
     console.log("sig", sig_point)
