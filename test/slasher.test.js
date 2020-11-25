@@ -114,7 +114,7 @@ describe("SnarkEpochDataSlasher", function () {
     let res = await instance.testHash3(data)
     console.log(res)
   });
-
+/*
   it('blake2xs hash works', async () => {
     let data = "0x1ae3a4617c510eac63b05c06ca1493b1a22d9f300f5138f1ef3622fba094800170b5d44300000008508c000000000010"
     let res = await instance.testHash(data)
@@ -142,17 +142,17 @@ describe("SnarkEpochDataSlasher", function () {
     assert((rx**3n + 1n) % base == (ry**2n) % base)
     assert(x == rx && y == ry)
   })
-
+*/
   const info3 = {
     inner: '0x66bf77133dd2f20f56c8260b3700f74e16df62be968466027bd6ec37a8623641b3e903ef5fce6a3b0b0c565b2eebbd00',
     extra: '0x0000000000000078',
-    sig: [158, 72, 75, 77, 22, 142, 29, 140, 254, 187, 120, 168, 130, 101, 64, 42, 52, 228, 184, 126, 98, 5, 138, 79, 140, 175, 201, 239, 204, 135, 133, 91, 112, 23, 38, 184, 7, 175, 137, 12, 90, 119, 71, 93, 221, 106, 246, 0]
+    sig: [158, 72, 75, 77, 22, 142, 29, 140, 254, 187, 120, 168, 130, 101, 64, 42, 52, 228, 184, 126, 98, 5, 138, 79, 140, 175, 201, 239, 204, 135, 133, 91, 112, 23, 38, 184, 7, 175, 137, 12, 90, 119, 71, 93, 221, 106, 246, 128]
   }
 
   const info1 = {
     inner: '0xcd24f5a3be8f5306767c25e2ef565810f76b96887302a246462dfc7575ad4a7d8ea18220a731e942f3b5eaa5b3f47501',
     extra: '0x0100000000000084',
-    sig: [255, 16, 101, 16, 206, 86, 53, 253, 109, 149, 69, 64, 239, 73, 187, 11, 70, 172, 157, 120, 9, 158, 73, 47, 177, 127, 203, 96, 139, 125, 177, 170, 114, 179, 194, 243, 184, 237, 86, 255, 171, 74, 145, 90, 162, 213, 140, 1]
+    sig: [255, 16, 101, 16, 206, 86, 53, 253, 109, 149, 69, 64, 239, 73, 187, 11, 70, 172, 157, 120, 9, 158, 73, 47, 177, 127, 203, 96, 139, 125, 177, 170, 114, 179, 194, 243, 184, 237, 86, 255, 171, 74, 145, 90, 162, 213, 140, 129]
   }
 
   const info2 = {
@@ -164,10 +164,21 @@ describe("SnarkEpochDataSlasher", function () {
   const info4 = {
     inner: '0x100da31ae27858efbbca0704c60831f3630d68defc194e26d25189d7097b5f1ea09231d47c3a74eb3f1daaeb27e3e400',
     extra: '0x0000000000000078',
-    sig: [245, 247, 108, 37, 25, 163, 158, 240, 233, 83, 140, 198, 51, 22, 28, 56, 80, 16, 154, 12, 124, 84, 128, 131, 42, 234, 125, 138, 195, 252, 138, 116, 194, 102, 180, 206, 106, 86, 25, 66, 101, 132, 233, 210, 225, 7, 14, 128]
+    sig: [245, 247, 108, 37, 25, 163, 158, 240, 233, 83, 140, 198, 51, 22, 28, 56, 80, 16, 154, 12, 124, 84, 128, 131, 42, 234, 125, 138, 195, 252, 138, 116, 194, 102, 180, 206, 106, 86, 25, 66, 101, 132, 233, 210, 225, 7, 14, 0]
   }
 
+  const info5 = {
+    inner: '0xdde0fe1df0eaffa6c326a60fd624d3217b506d19fd7f65d7101c1ac2c8cca06b24fe740bab5fd39a610257c60d998c01',
+    extra: '0x0100000000008002',
+    sig: [245, 29, 224, 84, 151, 73, 123, 172, 29, 168, 222, 245, 199, 229, 235, 216, 53, 0, 59, 28, 192, 12, 142, 216, 224, 93, 93, 79, 62, 94, 70, 246, 234, 29, 127, 157, 146, 69, 52, 19, 102, 210, 223, 52, 201, 240, 43, 128]
+  }
 
+  const info6 = {
+    inner: '0xb92cad226bbc34cf100a033c6f9ea5d68878762c3a08af22fb889a5c454d5852114ae18abc25c9eae914282c72355c01',
+    extra: '0x0300000000008002',
+    sig: [11, 0, 154, 125, 65, 178, 12, 115, 45, 250, 147, 247, 49, 196, 67, 212, 108, 253, 142, 34, 223, 161, 146, 137, 107, 57, 97, 87, 133, 211, 125, 25, 192, 255, 122, 239, 162, 160, 232, 187, 17, 125, 51, 161, 142, 145, 27, 0]
+  }
+/*
   it('hash to point 1', async () => {
     let res = await makeHint(instance, info1)
     console.log("hint", res)
@@ -205,12 +216,14 @@ describe("SnarkEpochDataSlasher", function () {
     let res = await instance.testValid(extra_data, inner_hash, sig_point, hint)
     console.log(res)
   })
-
+*/
   it('test decoding', async () => {
     const header = await infoToData(instance, info1)
     const other = await infoToData(instance, info2)
     const header3 = await infoToData(instance, info3)
     const header4 = await infoToData(instance, info4)
+    const header5 = await infoToData(instance, info5)
+    const header6 = await infoToData(instance, info6)
 
       console.log(await instance.getEpochFromData(header))
       console.log(await instance.getEpochFromData(other))
@@ -222,9 +235,21 @@ describe("SnarkEpochDataSlasher", function () {
       console.log("header3", await instance.checkSlash(header3))
       console.log("header4", await instance.checkSlash(header4))
 
+      console.log("header5", await instance.checkSlash(header5))
+      console.log("header6", await instance.checkSlash(header6))
+
       console.log("Header 1", header)
       console.log("Header 2", other)
 
+  })
+
+  it('test', async () => {
+    let info = info3
+    const header = await infoToData(instance, info)
+    let hint = await makeHint(instance, info)
+    console.log("hint", hint)
+    console.log("header", await instance.checkSlash(header))
+    console.log("valid", await instance.testValid(info.extra, info.inner, uncompressSig(info.sig), hint))
   })
 
 })

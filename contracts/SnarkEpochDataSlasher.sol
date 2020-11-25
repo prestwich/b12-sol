@@ -53,7 +53,7 @@ contract SnarkEpochDataSlasher {
         internal
         view
         returns (B12.G1Point memory) {
-        B12.G1Point memory p = B12.mapToG1(x, hint1, hint2, !greatest);
+        B12.G1Point memory p = B12.mapToG1(x, hint1, hint2, greatest);
         B12.G1Point memory q = CeloB12_377Lib.g1Mul(p, 30631250834960419227450344600217059328);
         // TODO: check that q != 0
         return q;
