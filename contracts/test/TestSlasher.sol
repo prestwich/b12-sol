@@ -67,11 +67,11 @@ contract TestSlasher is SnarkEpochDataSlasher {
         return (p.X.a, p.X.b, p.Y.a, p.Y.b);
     }
 
-    function testParseToRandom(bytes memory extra, bytes memory message) public view returns (uint256, uint256) {
+    function testParseToRandom(bytes memory extra, bytes memory message) public view returns (uint256, uint256, bool) {
         bool greatest;
         B12.Fp memory x;
         (x, greatest) = B12.parseRandomPoint(doHash(abi.encodePacked(extra, message)));
-        return (x.a, x.b);
+        return (x.a, x.b, greatest);
     }
 
     function testValid(bytes memory extra, bytes memory message, bytes memory sig, bytes memory hints) public view returns (bool) {

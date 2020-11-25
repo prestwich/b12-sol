@@ -271,7 +271,7 @@ library B12 {
     function parseRandomPoint(bytes memory h) internal pure returns (Fp memory, bool) {
         (uint256 a, uint256 b, uint256 byt) = parsePointGen(h, 0);
         a = a + ((byt&0x01) << 15*8);
-        return (Fp(a, b), byt&0x02 != 0);
+        return (Fp(a, b), byt&0x80 == 0);
     }
 
     function readFp2(bytes memory h, uint256 offset) internal pure returns (Fp2 memory) {

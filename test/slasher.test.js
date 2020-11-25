@@ -62,19 +62,19 @@ async function makeHint(instance, { inner, extra }) {
   let [epoch, res, res2] = await instance.testHashing(extra_data, inner_hash)
   // console.log("hash result", res)
   let arr = [...Buffer.from(res.substr(2), "hex")]
-  // console.log(arr.slice(0, 48))
+  console.log(arr.slice(0, 48))
   let needed = arr.slice(0, 48).reverse()
   // Parse to point
   needed[0] = needed[0] & 0x01
   let x = BigInt("0x" + Buffer.from(needed).toString("hex"))
   let [y1, y2] = findY(x)
-  // console.log("x y1 y2", x, y1, y2)
+  console.log("x y1 y2", x.toString(16), y1.toString(16), y2.toString(16))
   let parsed_x = await instance.testParseToRandom(extra_data, inner_hash)
-  // console.log('parsed_x', parsed_x)
+  console.log('parsed_x', parsed_x)
   let hints = `0x${y1.toString(16).padStart(128, 0)}${y2.toString(16).padStart(128, 0)}`
   // console.log('hint', hints)
   let point = await instance.testParseToG1Scaled(extra_data, inner_hash, hints)
-  // console.log('point', point)
+  console.log('point', point)
   return hints
 }
 
@@ -143,17 +143,30 @@ describe("SnarkEpochDataSlasher", function () {
     assert(x == rx && y == ry)
   })
 
-  const info1 = {
+  const info3 = {
     inner: '0x66bf77133dd2f20f56c8260b3700f74e16df62be968466027bd6ec37a8623641b3e903ef5fce6a3b0b0c565b2eebbd00',
     extra: '0x0000000000000078',
     sig: [158, 72, 75, 77, 22, 142, 29, 140, 254, 187, 120, 168, 130, 101, 64, 42, 52, 228, 184, 126, 98, 5, 138, 79, 140, 175, 201, 239, 204, 135, 133, 91, 112, 23, 38, 184, 7, 175, 137, 12, 90, 119, 71, 93, 221, 106, 246, 0]
   }
 
+  const info1 = {
+    inner: '0xcd24f5a3be8f5306767c25e2ef565810f76b96887302a246462dfc7575ad4a7d8ea18220a731e942f3b5eaa5b3f47501',
+    extra: '0x0100000000000084',
+    sig: [255, 16, 101, 16, 206, 86, 53, 253, 109, 149, 69, 64, 239, 73, 187, 11, 70, 172, 157, 120, 9, 158, 73, 47, 177, 127, 203, 96, 139, 125, 177, 170, 114, 179, 194, 243, 184, 237, 86, 255, 171, 74, 145, 90, 162, 213, 140, 1]
+  }
+
   const info2 = {
+    inner: '0xe2ff5106f792bb53d97d035a7e9e7b4616acbb06b57a6a13d8cebd974a581e604bfeeb71ae78c46aa32f7fad4a325c00',
+    extra: '0x0400000000000084',
+    sig: [229, 250, 227, 43, 229, 82, 245, 110, 165, 20, 37, 182, 226, 91, 223, 215, 187, 70, 115, 225, 32, 43, 120, 250, 44, 137, 216, 236, 210, 240, 57, 188, 28, 224, 161, 231, 138, 215, 154, 7, 240, 104, 166, 105, 159, 165, 80, 129]
+  }
+
+  const info4 = {
     inner: '0x100da31ae27858efbbca0704c60831f3630d68defc194e26d25189d7097b5f1ea09231d47c3a74eb3f1daaeb27e3e400',
     extra: '0x0000000000000078',
     sig: [245, 247, 108, 37, 25, 163, 158, 240, 233, 83, 140, 198, 51, 22, 28, 56, 80, 16, 154, 12, 124, 84, 128, 131, 42, 234, 125, 138, 195, 252, 138, 116, 194, 102, 180, 206, 106, 86, 25, 66, 101, 132, 233, 210, 225, 7, 14, 128]
   }
+
 
   it('hash to point 1', async () => {
     let res = await makeHint(instance, info1)
@@ -193,46 +206,11 @@ describe("SnarkEpochDataSlasher", function () {
     console.log(res)
   })
 
-  /*
-  it('hash to point 2', async () => {
-    let inner_hash = '0xff0d8dd0bfd78e6465071e4359cf7d9c4252b5206616060b7b97dd92a03f586ed5c975552c6d2eb05b326216d4dff300'
-    let extra_data = '0x0200000000000080' // counter, max nonsigners, epoch
-    let [epoch, res, res2] = await instance.testHashing(extra_data, inner_hash)
-    console.log(res2, res)
-    let arr = [...Buffer.from(res.substr(2), "hex")]
-    console.log(arr.slice(0,48))
-    let needed = arr.slice(0,48).reverse()
-    needed[0] = needed[0] & 0x01
-    // Parse to point
-    let x = BigInt("0x"+Buffer.from(needed).toString("hex"))
-    let [y1,y2] = findY(x)
-    console.log("x y1 y2", x, y1, y2)
-    let hints = `0x${y1.toString(16).padStart(128,0)}${y2.toString(16).padStart(128,0)}`
-    console.log('hint', hints)
-    let point = await instance.testParseToG1Scaled(extra_data, inner_hash, hints)
-    console.log('point', point)
-  })
-
-  it('test pairing 2', async () => {
-    let sig = [212, 56, 43, 123, 117, 175, 115, 234, 113, 187, 104, 128, 153, 5, 65, 116, 47, 137, 117, 232, 56, 247, 226, 6, 122, 135, 251, 19, 53, 57, 247, 86, 39, 115, 6, 60, 8, 53, 108, 38, 24, 109, 202, 29, 108, 235, 19, 1]
-    let sig_point = uncompressSig(sig)
-    console.log("sig", sig_point)
-    let [x1, x2, y1, y2] = await instance.testParseG1(sig_point)
-    let rx = combine(x1,x2)
-    let ry = combine(y1,y2)
-    console.log(rx, ry)
-    let inner_hash = '0xff0d8dd0bfd78e6465071e4359cf7d9c4252b5206616060b7b97dd92a03f586ed5c975552c6d2eb05b326216d4dff300'
-    let extra_data = '0x0200000000000080' // counter, max nonsigners, epoch
-    // this was calculated in the previous test case
-    let hint = "0x00000000000000000000000000000000018f73b0f9f89018577c1967ba35815e988789000c8a6a4693c5701c65d0979a08a3acf13a0b77dde56fab80856375fc00000000000000000000000000000000001ec6951dcc80d26ebeec58b26bc7dc819b50f2f46aa9488b2df2135438b0660e67b052f5f488229f99147f7a9c8a05"
-    let res = await instance.testValid(extra_data, inner_hash, sig_point, hint)
-    console.log(res)
-  })
-  */
-
   it('test decoding', async () => {
     const header = await infoToData(instance, info1)
     const other = await infoToData(instance, info2)
+    const header3 = await infoToData(instance, info3)
+    const header4 = await infoToData(instance, info4)
 
       console.log(await instance.getEpochFromData(header))
       console.log(await instance.getEpochFromData(other))
@@ -240,6 +218,9 @@ describe("SnarkEpochDataSlasher", function () {
       console.log(await instance.testDecode(other))
       console.log("header1", await instance.checkSlash(header))
       console.log("header2", await instance.checkSlash(other))
+
+      console.log("header3", await instance.checkSlash(header3))
+      console.log("header4", await instance.checkSlash(header4))
 
       console.log("Header 1", header)
       console.log("Header 2", other)
