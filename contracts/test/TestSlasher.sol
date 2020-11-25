@@ -84,5 +84,10 @@ contract TestSlasher is SnarkEpochDataSlasher {
         return CeloB12_377Lib.pairing(args);
     }
 
+    function testDecode(bytes memory data) public pure returns (bytes memory, bytes memory, uint256, bytes memory, bytes memory) {
+        DataArg memory arg = decodeDataArg(data);
+        return (arg.extra, arg.bhhash, arg.bitmap, arg.sig, arg.hint);
+    }
+
 
 }

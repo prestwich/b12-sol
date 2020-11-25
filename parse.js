@@ -25,7 +25,6 @@ function uncompressSig(comp) {
     let x = BigInt("0x"+Buffer.from(sig).toString("hex"))
     let [a, b] = tonelli((x ** 3n + 1n) % base, base)
     let y = greatest ? max(a,b) : min(a,b)
-    console.log(x, a, b, greatest ? max(a,b) : min(a,b), a < b, greatest)
     return `0x${x.toString(16).padStart(128,0)}${y.toString(16).padStart(128,0)}`
 }
   

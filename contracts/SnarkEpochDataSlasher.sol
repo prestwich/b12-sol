@@ -93,6 +93,56 @@ contract SnarkEpochDataSlasher {
         return B12.mapToG1(x, B12.parseFp(hints, 0+idx), B12.parseFp(hints, 64+idx), greatest);
     }
 
+  function getEpochFromData(bytes memory data) public pure returns (uint256) {
+    return epochFromExtraData(decodeDataArg(data).extra);
+  }
+
+  struct DataArg {
+    bytes extra;
+    bytes bhhash;
+    uint256 bitmap;
+    bytes sig;
+    bytes hint;
+  }
+
+    function getUint256FromBytes(bytes memory bs, uint256 start) internal pure returns (uint256) {
+        return uint256(getBytes32FromBytes(bs, start));
+    }
+
+    function getBytes32FromBytes(bytes memory bs, uint256 start) internal pure returns (bytes32) {
+        require(bs.length >= start +32, "slicing out of range");
+        bytes32 x;
+        assembly {
+            x := mload(add(bs, add(start, 32)))
+        }
+        return x;
+    }
+
+  function decodeDataArg(bytes memory a) internal pure returns (DataArg memory) {
+    return
+      DataArg(
+        extract(a, 0, 8),
+        extract(a, 8, 48),
+        getUint256FromBytes(a, 56),
+        extract(a, 88, 128),
+        extract(a, 216, 128)
+      );
+  }
+
+  function extract(bytes memory a, uint256 offset, uint256 len)
+    internal
+    pure
+    returns (bytes memory)
+  {
+    bytes memory res = new bytes(len);
+    for (uint256 i = 0; i < len; i++) {
+      res[i] = a[i + offset];
+    }
+    return res;
+  }
+
+
+
 /*
     function parseToG2(bytes memory h, bytes memory hint1, bytes memory hint2) internal view returns (B12.G2Point memory) {
         bool greatest;
@@ -132,6 +182,13 @@ contract SnarkEpochDataSlasher {
         args[0] = B12.PairingArg(sig_point, negativeP2());
         args[1] = B12.PairingArg(p, agg);
         return CeloB12_377Lib.pairing(args);
+    }
+
+    function checkSlash(bytes memory arg_data) public view returns (bool) {
+        DataArg memory arg = decodeDataArg(arg_data);
+        bytes memory data = abi.encodePacked(arg.extra, arg.bhhash);
+        uint16 epoch = epochFromExtraData(arg.extra);
+        return isValid(epoch, data, arg.bitmap, arg.sig, arg.hint);
     }
 
 }
