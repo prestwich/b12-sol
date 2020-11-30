@@ -217,7 +217,67 @@ describe("SnarkEpochDataSlasher", function () {
     console.log(res)
   })
 */
-  it('test decoding', async () => {
+
+  it('test from RPC', async () => {
+    let res = await ethers.provider.send('istanbul_getEpochValidatorSetData', ["0xa"])
+    let info = {
+      inner: "0x" + Buffer.from(res.bhhash, "base64").toString("hex"),
+      extra: "0x" + res.attempts.toString(16).padStart(2, '0') + Buffer.from(res.extraData, "base64").toString("hex"),
+      sig: Buffer.from(res.sig, "base64")
+    }
+    console.log(info)
+    let header = await infoToData(instance, info)
+    console.log(header)
+    console.log(await instance.getEpochFromData(header))
+    console.log(await instance.testDecode(header))
+    console.log("header", await instance.checkSlash(header))
+  })
+
+  function conv(arg) {
+    return Buffer.from(arg.split(" ").map(a => parseInt(a,10))).toString("hex")
+  }
+
+  function make(a) {
+    return uncompressSig([...(Buffer.from(conv(a), 'hex'))])
+  }
+
+  it('test aggregation', async () => {
+
+    let sig0 = make("252 197 202 189 148 31 167 22 52 236 212 157 48 200 201 139 184 145 189 221 160 19 14 68 129 239 26 35 91 23 245 115 37 204 103 191 8 139 26 63 93 144 188 10 242 124 98 1")
+    let sig1 = make("98 206 56 100 204 210 190 216 160 13 153 63 247 15 29 68 228 253 145 129 97 200 45 168 31 34 56 84 8 216 114 82 76 23 250 235 5 237 139 197 37 19 0 220 10 126 15 1")
+    let sig2 = make("231 85 183 177 47 227 32 66 33 106 75 254 114 44 28 211 165 61 238 64 180 21 65 102 0 154 105 158 87 42 104 126 212 22 127 54 218 62 109 50 14 188 196 24 34 25 109 0")
+    let sig0a = make("252 197 202 189 148 31 167 22 52 236 212 157 48 200 201 139 184 145 189 221 160 19 14 68 129 239 26 35 91 23 245 115 37 204 103 191 8 139 26 63 93 144 188 10 242 124 98 129")
+    let sig1a = make("98 206 56 100 204 210 190 216 160 13 153 63 247 15 29 68 228 253 145 129 97 200 45 168 31 34 56 84 8 216 114 82 76 23 250 235 5 237 139 197 37 19 0 220 10 126 15 129")
+    let sig2a = make("231 85 183 177 47 227 32 66 33 106 75 254 114 44 28 211 165 61 238 64 180 21 65 102 0 154 105 158 87 42 104 126 212 22 127 54 218 62 109 50 14 188 196 24 34 25 109 128")
+
+    let res = [
+      48, 196,   2, 159, 203,  91,  62,  37, 173,  30,
+     141, 251, 141,  50,  33, 186, 192,  50, 157, 144,
+     124,   8, 173, 119,  98, 153,  99, 169, 228, 153,
+      96, 241, 235,  83, 163, 114,   3,  45,   1, 155,
+      62, 189,  75,  48, 103,  86,   9,   0
+   ]
+    console.log(uncompressSig(res))
+    console.log(sig0, sig1, sig2)
+    console.log(await instance.testKeyAggregation())
+    console.log(await instance.testAggregation(sig0, sig1, sig2))
+    console.log(await instance.testAggregation(sig0, sig1, sig2a))
+    console.log(await instance.testAggregation(sig0, sig1a, sig2))
+    console.log(await instance.testAggregation(sig0, sig1a, sig2a))
+    console.log(await instance.testAggregation(sig0a, sig1, sig2))
+    console.log(await instance.testAggregation(sig0a, sig1, sig2a))
+    console.log(await instance.testAggregation(sig0a, sig1a, sig2))
+    console.log(await instance.testAggregation(sig0a, sig1a, sig2a))
+
+    let weird = '0x0100000080000044717494530db2abca4866607a1c5a43183f21b7b5b5cdbfe89e64f67551c1eb97c8c63c60568afc58b0cc51998d9d230100000000000000000000000000000000000000000000000000000000000000070000000000000000000000000000000000b4ef893242e667d75205223b3a084ebba8abe416bcab88bd44ac48812e8e8c72f7544a1cd2fce7d62c42cd9964b19a000000000000000000000000000000000054111475eec2a1ad8504fae10119b568ddb543b8a912fd2e97a14409aab253036b1e8998e01141c14d7fdde33f836a00000000000000000000000000000000014cd5a913e7c1df5d5cc6983248ea1bbb25b07708f8da3fbe0bb991df69ceed74a9b4a3c2286f7b7988e009e0ffaf4c000000000000000000000000000000000061649d03dd4f0b68de3f283a585f1f5efd297bf7fc394f60e7a89dda9f7912a261a8a06dd790850b7fdff61f0050b5'
+
+    console.log(await instance.getEpochFromData(weird))
+    console.log(await instance.testDecode(weird))
+    console.log("header1", await instance.checkSlash(weird))
+
+  })
+
+  it.skip('test decoding', async () => {
     const header = await infoToData(instance, info1)
     const other = await infoToData(instance, info2)
     const header3 = await infoToData(instance, info3)
@@ -225,10 +285,12 @@ describe("SnarkEpochDataSlasher", function () {
     const header5 = await infoToData(instance, info5)
     const header6 = await infoToData(instance, info6)
 
+    0x0100000080000044717494530db2abca4866607a1c5a43183f21b7b5b5cdbfe89e64f67551c1eb97c8c63c60568afc58b0cc51998d9d230100000000000000000000000000000000000000000000000000000000000000070000000000000000000000000000000000b4ef893242e667d75205223b3a084ebba8abe416bcab88bd44ac48812e8e8c72f7544a1cd2fce7d62c42cd9964b19a000000000000000000000000000000000054111475eec2a1ad8504fae10119b568ddb543b8a912fd2e97a14409aab253036b1e8998e01141c14d7fdde33f836a00000000000000000000000000000000014cd5a913e7c1df5d5cc6983248ea1bbb25b07708f8da3fbe0bb991df69ceed74a9b4a3c2286f7b7988e009e0ffaf4c000000000000000000000000000000000061649d03dd4f0b68de3f283a585f1f5efd297bf7fc394f60e7a89dda9f7912a261a8a06dd790850b7fdff61f0050b5
+
       console.log(await instance.getEpochFromData(header))
       console.log(await instance.getEpochFromData(other))
-      console.log(await instance.testDecode(header))
-      console.log(await instance.testDecode(other))
+      console.log(await instance.testDecode(header5))
+      console.log(await instance.testDecode(header6))
       console.log("header1", await instance.checkSlash(header))
       console.log("header2", await instance.checkSlash(other))
 
@@ -242,7 +304,7 @@ describe("SnarkEpochDataSlasher", function () {
       console.log("Header 2", other)
 
   })
-
+/*
   it('test', async () => {
     let info = info3
     const header = await infoToData(instance, info)
@@ -251,6 +313,6 @@ describe("SnarkEpochDataSlasher", function () {
     console.log("header", await instance.checkSlash(header))
     console.log("valid", await instance.testValid(info.extra, info.inner, uncompressSig(info.sig), hint))
   })
-
+*/
 })
 

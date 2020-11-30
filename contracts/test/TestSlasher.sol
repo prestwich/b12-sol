@@ -62,6 +62,19 @@ contract TestSlasher is SnarkEpochDataSlasher {
         return (epochFromExtraData(extra), doHash(abi.encodePacked(extra, message)), abi.encodePacked(extra, message));
     }
 
+    function testAggregation(bytes memory sig0, bytes memory sig1, bytes memory sig2) public view returns (uint256, uint256, uint256, uint256) {
+        B12.G1Point memory sig0_point = B12.parseG1(sig0, 0);
+        B12.G1Point memory sig1_point = B12.parseG1(sig1, 0);
+        B12.G1Point memory sig2_point = B12.parseG1(sig2, 0);
+        B12.G1Point memory res = CeloB12_377Lib.g1Add(CeloB12_377Lib.g1Add(sig0_point, sig1_point), sig2_point);
+        return (res.X.a, res.X.b, res.Y.a, res.Y.b);
+    }
+
+    function testKeyAggregation() public view {
+        B12.G2Point memory public_key = getBLSPublicKey(100, 0);
+        CeloB12_377Lib.g2Add(public_key, public_key);
+    }
+
     function testParseToG1Scaled(bytes memory extra, bytes memory message, bytes memory hints) public view returns (uint256, uint256, uint256, uint256) {
         B12.G1Point memory p = parseToG1Scaled(doHash(abi.encodePacked(extra, message)), hints);
         return (p.X.a, p.X.b, p.Y.a, p.Y.b);

@@ -1,5 +1,4 @@
 
-
 function modpow(base1, exponent, modulus) {
     let result = 1n
     base1 = base1 % modulus
@@ -9,42 +8,6 @@ function modpow(base1, exponent, modulus) {
         base1 = (base1 * base1) % modulus
     }
     return result
-}
-
-// utility function to find gcd  
-function gcd(a, b) {
-    if (b == 0n) return a
-    else return gcd(b, a % b)
-}
-
-// Returns k such that b^k = 1 (mod p)  
-function order(p, b) {
-    if (gcd(p, b) != 1n) {
-        consolo.log('p and b are not co-prime.')
-        return -1n
-    }
-
-    // Initializing k with first 
-    // odd prime number  
-    let k = 3n
-    while (true) {
-        if (modpow(b, k, p) == 1n)
-            return k
-        k++
-    }
-}
-
-// function return p - 1 (= x argument) 
-// as x * 2^e, where x will be odd  
-// sending e as reference because  
-// updation is needed in actual e  
-function convertx2e(x) {
-    z = 0n
-    while (x % 2n == 0n) {
-        x /= 2n
-        z++
-    }
-    return x
 }
 
 function tonelli(n, p) {
@@ -74,7 +37,6 @@ function tonelli(n, p) {
     let m = ss;
 
     while (true) {
-        // console.log("looping", t)
         if (t == 1n) {
             return [r, p - r, true]
         }
