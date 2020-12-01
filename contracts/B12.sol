@@ -264,10 +264,10 @@ library B12 {
         return (Fp(a, b), byt&0xa0 != 0);
     }
 
-    function parseSimplePoint(bytes memory h, uint256 offset) internal pure returns (Fp memory, bool) {
+    function parseSimplePoint(bytes memory h, uint256 offset) internal pure returns (Fp memory) {
         (uint256 a, uint256 b, uint256 byt) = parsePointGen(h, offset);
         a = a + (byt << 15*8);
-        return (Fp(a, b), byt&0xa0 != 0);
+        return Fp(a, b);
     }
 
     function parsePoint(bytes memory h) internal pure returns (Fp memory, bool) {
@@ -281,11 +281,8 @@ library B12 {
     }
 
     function readFp2(bytes memory h, uint256 offset) internal pure returns (Fp2 memory) {
-        Fp memory a;
-        Fp memory b;
-        bool res;
-        (a, res) = parseSimplePoint(h, offset);
-        (b, res) = parseSimplePoint(h, 48+offset);
+        Fp memory a = parseSimplePoint(h, offset);
+        Fp memory b = parseSimplePoint(h, 48+offset);
         return Fp2(a, b);
     }
 
