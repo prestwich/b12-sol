@@ -265,9 +265,23 @@ library B12 {
     }
 
     function parseSimplePoint(bytes memory h, uint256 offset) internal pure returns (Fp memory) {
-        (uint256 a, uint256 b, uint256 byt) = parsePointGen(h, offset);
-        a = a + (byt << 15*8);
-        return Fp(a, b);
+        Fp memory res = Fp(0,0);
+        parseSimplePoint(h, offset, res);
+        return res;
+    }
+
+    function parseSimplePoint(bytes memory h, uint256 offset, Fp memory p) internal pure {
+        /* (uint256 a, uint256 b, uint256 byt) = parsePointGen(h, offset);
+        a = a + (byt << 15*8); */
+        uint256 a;
+        uint256 b;
+        assembly {
+            a := mload(add(0x20, add(h, offset)))
+            b := mload(add(0x40, add(h, offset)))
+        }
+        // p.a = a & (0xffffffffffffffffffffffffffffffff << (16*8));
+        p.a = a;
+        p.b = b;
     }
 
     function parsePoint(bytes memory h) internal pure returns (Fp memory, bool) {
@@ -282,14 +296,24 @@ library B12 {
 
     function readFp2(bytes memory h, uint256 offset) internal pure returns (Fp2 memory) {
         Fp memory a = parseSimplePoint(h, offset);
-        Fp memory b = parseSimplePoint(h, 48+offset);
+        Fp memory b = parseSimplePoint(h, 64+offset);
         return Fp2(a, b);
+    }
+
+    function readFp2(bytes memory h, uint256 offset, Fp2 memory p) internal pure {
+        parseSimplePoint(h, offset, p.a);
+        parseSimplePoint(h, 64+offset, p.b);
     }
 
     function readG2(bytes memory h, uint256 offset) internal pure returns (G2Point memory) {
         Fp2 memory a = readFp2(h, offset);
-        Fp2 memory b = readFp2(h, 96+offset);
+        Fp2 memory b = readFp2(h, 128+offset);
         return G2Point(a, b);
+    }
+
+    function readG2(bytes memory h, uint256 offset, G2Point memory p) internal pure {
+        readFp2(h, offset, p.X);
+        readFp2(h, 128+offset, p.Y);
     }
 
     function g1Eq(G1Point memory a, G1Point memory b)

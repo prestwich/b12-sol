@@ -241,7 +241,7 @@ describe("SnarkEpochDataSlasher", function () {
     return uncompressSig([...(Buffer.from(conv(a), 'hex'))])
   }
 
-  it('test aggregation', async () => {
+  it.skip('test aggregation', async () => {
 
     let sig0 = make("252 197 202 189 148 31 167 22 52 236 212 157 48 200 201 139 184 145 189 221 160 19 14 68 129 239 26 35 91 23 245 115 37 204 103 191 8 139 26 63 93 144 188 10 242 124 98 1")
     let sig1 = make("98 206 56 100 204 210 190 216 160 13 153 63 247 15 29 68 228 253 145 129 97 200 45 168 31 34 56 84 8 216 114 82 76 23 250 235 5 237 139 197 37 19 0 220 10 126 15 1")
@@ -282,7 +282,7 @@ describe("SnarkEpochDataSlasher", function () {
 
   })
 
-  it.skip('test decoding', async () => {
+  it('test decoding', async () => {
     const header = await infoToData(instance, info1)
     const other = await infoToData(instance, info2)
     const header3 = await infoToData(instance, info3)

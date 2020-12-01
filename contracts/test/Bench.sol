@@ -31,9 +31,28 @@ contract Bench is SnarkEpochDataSlasher {
         bytes memory output = new bytes(192);
         bytes memory input = abi.encodePacked(uint256(0), uint256(123));
         bool success;
-        for (uint i = 0; i < 300000; i++) {
+        for (uint i = 0; i < 150; i++) {
             assembly {
                 success := staticcall(gas(), 235 /* 0xff - 20 */, add(0x20, input), 64, add(0x20, output), 192)
+            }
+        }
+        return gasleft();
+    }
+
+    function testAggregation() public view returns (uint) {
+        bool prev = false;
+        bytes memory buffer = new bytes(256);
+        B12.G2Point memory public_key = B12.G2Point(B12.Fp2(B12.Fp(0, 0), B12.Fp(0, 0)), B12.Fp2(B12.Fp(0, 0), B12.Fp(0, 0)));
+        getBLSPublicKey(123, 0, public_key, buffer);
+        B12.G2Point memory agg = B12.G2Point(B12.Fp2(B12.Fp(0, 0), B12.Fp(0, 0)), B12.Fp2(B12.Fp(0, 0), B12.Fp(0, 0)));
+        getBLSPublicKey(123, 0, agg, buffer);
+        for (uint i = 0; i < 150; i++) {
+            getBLSPublicKey(123, 0, public_key, buffer);
+            if (!prev) {
+                agg = public_key;
+                prev = true;
+            } else {
+                agg = CeloB12_377Lib.g2Add(agg, public_key);
             }
         }
         return gasleft();

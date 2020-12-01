@@ -71,13 +71,30 @@ contract SnarkEpochDataSlasher {
         bool success;
         (success, out) = VALIDATOR_BLS.staticcall(abi.encodePacked(index, blockNumber));
         require(success, "error calling validatorBLSPublicKeyFromSet precompile");
-        require(out.length == 192, "bad BLS public key length");
+        require(out.length == 256, "bad BLS public key length");
         return out;
+    }
+
+    function validatorBLSPublicKeyFromSet(uint256 index, uint256 blockNumber, bytes memory buffer) public view {
+        bool success;
+        assembly {
+            mstore(add(0x20, buffer), index)
+            mstore(add(0x40, buffer), blockNumber)
+            success := staticcall(gas(), 235 /* 0xff - 20 */, add(0x20, buffer), 64, add(0x20, buffer), 256)
+        }
+        require(success, "error calling validatorBLSPublicKeyFromSet precompile");
+        // require(out.length == 192, "bad BLS public key length");
+        // return out;
     }
 
     function getBLSPublicKey(uint16 epoch, uint i) internal view returns (B12.G2Point memory) {
         bytes memory data = validatorBLSPublicKeyFromSet(i, epoch);
         return B12.readG2(data, 0);
+    }
+
+    function getBLSPublicKey(uint16 epoch, uint i, B12.G2Point memory p, bytes memory buffer) internal view {
+        validatorBLSPublicKeyFromSet(i, epoch, buffer);
+        return B12.readG2(buffer, 0, p);
     }
 
     function doHash(bytes memory data) internal view returns (bytes memory) {
@@ -162,12 +179,14 @@ contract SnarkEpochDataSlasher {
     function isValid(uint16 epoch, bytes memory data, uint256 bitmap, bytes memory sig, bytes memory hints) internal view returns (bool) {
         B12.G1Point memory p = parseToG1Scaled(doHash(data), hints);
         bool prev = false;
+        B12.G2Point memory public_key = B12.G2Point(B12.Fp2(B12.Fp(0, 0), B12.Fp(0, 0)), B12.Fp2(B12.Fp(0, 0), B12.Fp(0, 0)));
         B12.G2Point memory agg = B12.G2Point(B12.Fp2(B12.Fp(0, 0), B12.Fp(0, 0)), B12.Fp2(B12.Fp(0, 0), B12.Fp(0, 0)));
+        bytes memory buffer = new bytes(256);
         uint num = 0;
         for (uint i = 0; i < 150; i++) {
             if (bitmap & 1 == 1) {
                 num++;
-                B12.G2Point memory public_key = getBLSPublicKey(epoch, 0);
+                getBLSPublicKey(epoch, 0, public_key, buffer);
                 if (!prev) {
                     agg = public_key;
                     prev = true;

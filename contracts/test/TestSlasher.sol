@@ -69,7 +69,7 @@ contract TestSlasher is SnarkEpochDataSlasher {
         B12.G1Point memory res = CeloB12_377Lib.g1Add(CeloB12_377Lib.g1Add(sig0_point, sig1_point), sig2_point);
         return (res.X.a, res.X.b, res.Y.a, res.Y.b);
     }
-
+/*
     function testKeyAggregation(bytes memory sig0, bytes memory sig1, bytes memory sig2) public view returns (uint256, uint256, uint256, uint256, uint256, uint256, uint256, uint256) {
         B12.G2Point memory p0 = B12.readG2(sig0, 0);
         B12.G2Point memory p1 = B12.readG2(sig1, 0);
@@ -77,7 +77,7 @@ contract TestSlasher is SnarkEpochDataSlasher {
         B12.G2Point memory p = CeloB12_377Lib.g2Add(p0, CeloB12_377Lib.g2Add(p1, p2));
         return (p.X.a.a, p.X.a.b, p.X.b.a, p.X.b.b, p.Y.a.a, p.Y.a.b, p.Y.b.a, p.Y.b.b);
     }
-
+*/
     function testParseToG1Scaled(bytes memory extra, bytes memory message, bytes memory hints) public view returns (uint256, uint256, uint256, uint256) {
         B12.G1Point memory p = parseToG1Scaled(doHash(abi.encodePacked(extra, message)), hints);
         return (p.X.a, p.X.b, p.Y.a, p.Y.b);

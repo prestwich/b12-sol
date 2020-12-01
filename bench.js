@@ -21,6 +21,7 @@ async function main() {
     await bench(instance, "baseline")
     await bench(instance, "baseline2")
     await bench(instance, "validatorBLS")
+    await bench(instance, "testAggregation")
 }
 
 main()
