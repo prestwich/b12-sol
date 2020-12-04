@@ -428,13 +428,30 @@ library B12 {
         uint256 gasEstimate
     ) internal view returns (bool result) {
         uint256 len = argVec.length;
+        uint256[] memory input = new uint256[](len * 12);
+
+        for (uint256 i = 0; i < len; i++) {
+            uint256 idx = i * 12;
+            input[idx + 0] = argVec[i].g1.X.a;
+            input[idx + 1] = argVec[i].g1.X.b;
+            input[idx + 2] = argVec[i].g1.Y.a;
+            input[idx + 3] = argVec[i].g1.Y.b;
+            input[idx + 4] = argVec[i].g2.X.a.a;
+            input[idx + 5] = argVec[i].g2.X.a.b;
+            input[idx + 6] = argVec[i].g2.X.b.a;
+            input[idx + 7] = argVec[i].g2.X.b.b;
+            input[idx + 8] = argVec[i].g2.Y.a.a;
+            input[idx + 9] = argVec[i].g2.Y.a.b;
+            input[idx + 10] = argVec[i].g2.Y.b.a;
+            input[idx + 11] = argVec[i].g2.Y.b.b;
+        }
 
         bool success;
         assembly {
             success := staticcall(
                 gasEstimate,
                 precompile,
-                add(argVec, 0x20), // the body of the array
+                add(input, 0x20), // the body of the array
                 mul(384, len), // 384 bytes per arg
                 mload(0x40), // write to earliest freemem
                 32
