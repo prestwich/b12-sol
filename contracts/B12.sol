@@ -686,12 +686,22 @@ library B12 {
         uint256 gasEstimate
     ) internal view returns (bool result) {
         uint256 len = argVec.length;
+        uint256[] memory input = new uint256[](len * 12);
 
-        bytes memory argBytes = new bytes(0);
-        for (uint i = 0; i < len; i++) {
-            G1Point memory g1 = argVec[i].g1;
-            G2Point memory g2 = argVec[i].g2;
-            argBytes = abi.encodePacked(argBytes, g1.X.a, g1.X.b, g1.Y.a, g1.Y.b, g2.X.a.a, g2.X.a.b, g2.X.b.a, g2.X.b.b, g2.Y.a.a, g2.Y.a.b, g2.Y.b.a, g2.Y.b.b);
+        for (uint256 i = 0; i < len; i++) {
+            uint256 idx = i * 12;
+            input[idx + 0] = argVec[i].g1.X.a;
+            input[idx + 1] = argVec[i].g1.X.b;
+            input[idx + 2] = argVec[i].g1.Y.a;
+            input[idx + 3] = argVec[i].g1.Y.b;
+            input[idx + 4] = argVec[i].g2.X.a.a;
+            input[idx + 5] = argVec[i].g2.X.a.b;
+            input[idx + 6] = argVec[i].g2.X.b.a;
+            input[idx + 7] = argVec[i].g2.X.b.b;
+            input[idx + 8] = argVec[i].g2.Y.a.a;
+            input[idx + 9] = argVec[i].g2.Y.a.b;
+            input[idx + 10] = argVec[i].g2.Y.b.a;
+            input[idx + 11] = argVec[i].g2.Y.b.b;
         }
 
         bool success;
@@ -699,7 +709,7 @@ library B12 {
             success := staticcall(
                 gasEstimate,
                 precompile,
-                add(argBytes, 0x20), // the body of the array
+                add(input, 0x20), // the body of the array
                 mul(384, len), // 384 bytes per arg
                 mload(0x40), // write to earliest freemem
                 32

@@ -75,7 +75,7 @@ contract SnarkEpochDataSlasher {
         return out;
     }
 
-    function validatorBLSPublicKeyFromSet(uint256 index, uint256 blockNumber, bytes memory buffer) public view {
+    function validatorBLSPublicKeyFromSetInplace(uint256 index, uint256 blockNumber, bytes memory buffer) public view {
         bool success;
         assembly {
             mstore(add(0x20, buffer), index)
@@ -93,7 +93,7 @@ contract SnarkEpochDataSlasher {
     }
 
     function getBLSPublicKey(uint16 epoch, uint i, B12.G2Point memory p, bytes memory buffer) internal view {
-        validatorBLSPublicKeyFromSet(i, epoch, buffer);
+        validatorBLSPublicKeyFromSetInplace(i, epoch, buffer);
         return B12.readG2(buffer, 0, p);
     }
 
@@ -188,7 +188,14 @@ contract SnarkEpochDataSlasher {
                 num++;
                 getBLSPublicKey(epoch, 0, public_key, buffer);
                 if (!prev) {
-                    agg = public_key;
+                    agg.X.a.a = public_key.X.a.a;
+                    agg.X.b.a = public_key.X.b.a;
+                    agg.Y.a.a = public_key.Y.a.a;
+                    agg.Y.b.a = public_key.Y.b.a;
+                    agg.X.a.b = public_key.X.a.b;
+                    agg.X.b.b = public_key.X.b.b;
+                    agg.Y.a.b = public_key.Y.a.b;
+                    agg.Y.b.b = public_key.Y.b.b;
                     prev = true;
                 } else {
                     agg = CeloB12_377Lib.g2Add(agg, public_key);

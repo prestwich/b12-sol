@@ -114,6 +114,11 @@ describe("SnarkEpochDataSlasher", function () {
     let res = await instance.testHash3(data)
     console.log(res)
   });
+
+  it('getting BLS public key', async () => {
+    console.log(await instance.validatorBLSPublicKeyFromSet(0, 123))
+  })
+
 /*
   it('blake2xs hash works', async () => {
     let data = "0x1ae3a4617c510eac63b05c06ca1493b1a22d9f300f5138f1ef3622fba094800170b5d44300000008508c000000000010"
@@ -178,7 +183,7 @@ describe("SnarkEpochDataSlasher", function () {
     extra: '0x0300000000008002',
     sig: [11, 0, 154, 125, 65, 178, 12, 115, 45, 250, 147, 247, 49, 196, 67, 212, 108, 253, 142, 34, 223, 161, 146, 137, 107, 57, 97, 87, 133, 211, 125, 25, 192, 255, 122, 239, 162, 160, 232, 187, 17, 125, 51, 161, 142, 145, 27, 0]
   }
-/*
+
   it('hash to point 1', async () => {
     let res = await makeHint(instance, info1)
     console.log("hint", res)
@@ -216,7 +221,6 @@ describe("SnarkEpochDataSlasher", function () {
     let res = await instance.testValid(extra_data, inner_hash, sig_point, hint)
     console.log(res)
   })
-*/
 
   it('test from RPC', async () => {
     let res = await ethers.provider.send('istanbul_getEpochValidatorSetData', ["0xa"])
