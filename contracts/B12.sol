@@ -519,12 +519,12 @@ library B12 {
     ) internal view returns (G1Point memory c) {
         uint256[] memory input = new uint256[](argVec.length * 5);
         // hate this
-        for (uint256 i = 0; i < input.length; i += 5) {
-            input[i + 0] = argVec[i].point.X.a;
-            input[i + 1] = argVec[i].point.X.b;
-            input[i + 2] = argVec[i].point.Y.a;
-            input[i + 3] = argVec[i].point.Y.b;
-            input[i + 4] = argVec[i].scalar;
+        for (uint256 i = 0; i < argVec.length; i++) {
+            input[i*5 + 0] = argVec[i].point.X.a;
+            input[i*5 + 1] = argVec[i].point.X.b;
+            input[i*5 + 2] = argVec[i].point.Y.a;
+            input[i*5 + 3] = argVec[i].point.Y.b;
+            input[i*5 + 4] = argVec[i].scalar;
         }
 
         bool success;
@@ -627,13 +627,21 @@ library B12 {
                 precompile,
                 input,
                 288,
-                a, // reuse the memory to avoid growing
+                input, // reuse the memory to avoid growing
                 256
             )
             // deallocate the input, leaving dirty memory
             mstore(0x40, input)
         }
         require(success, "g2 mul precompile failed");
+        a.X.a.a = input[0];
+        a.X.a.b = input[1];
+        a.X.b.a = input[2];
+        a.X.b.b = input[3];
+        a.Y.a.a = input[4];
+        a.Y.a.b = input[5];
+        a.Y.b.a = input[6];
+        a.Y.b.b = input[7];
     }
 
     function g2MultiExp(
@@ -715,6 +723,8 @@ library B12 {
                 32
             )
             result := mload(mload(0x40)) // load what we just wrote
+            // deallocate the input, leaving dirty memory
+            mstore(0x40, input)
         }
         require(success, "pairing precompile failed");
     }

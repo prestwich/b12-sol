@@ -126,7 +126,6 @@ describe("BLS12-377", function () {
     }
   });
 
-  /*
   it('should g1MultiExp', async () => {
     for (const test of g1MultiExp) {
       assert.include(
@@ -186,5 +185,5 @@ describe("BLS12-377", function () {
   it.skip('should serializeG2', async () => {
     console.log(await instance.testSerializeG2(1, 2, 3, 4));
   });
-  */
+
 });
