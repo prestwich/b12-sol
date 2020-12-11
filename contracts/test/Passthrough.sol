@@ -243,15 +243,9 @@ contract Passthrough {
         return (res.a, res.b);
     }
 
-    function fp2MulTest() external view returns (uint256, uint256, uint256, uint256) {
-        B12.Fp2 memory x = B12.Fp2(
-            B12.Fp(0x018480be71c785fec89630a2a3841d01, 0xc565f071203e50317ea501f557db6b9b71889f52bb53540274e3e48f7c005196),
-            B12.Fp(0x00ea6040e700403170dc5a51b1b140d5, 0x532777ee6651cecbe7223ece0799c9de5cf89984bff76fe6b26bfefa6ea16afe)
-        );
-        B12.Fp2 memory y = B12.Fp2(
-            B12.Fp(0x01452cdfba80a16eecda9254a0ee5986, 0x3c1eec808c4079363a9a9facc1d675fb243bd4bbc27383d19474b6bbf602b222),
-            B12.Fp(0x00b623a64541bbd227e6681d5786d890, 0xb833c846c39bf79dfa8fb214eb26433dd491a504d1add8f4ab66f22e7a14706e)
-        );
+    function fp2MulTest(uint256[] calldata arr) external view returns (uint256, uint256, uint256, uint256) {
+        B12.Fp2 memory x = B12.Fp2(B12.Fp(arr[0], arr[1]), B12.Fp(arr[2], arr[3]));
+        B12.Fp2 memory y = B12.Fp2(B12.Fp(arr[4], arr[5]), B12.Fp(arr[6], arr[7]));
         B12.Fp2 memory res = B12.fp2Mul(x, y);
         return (res.a.a, res.a.b, res.b.a, res.b.b);
     }

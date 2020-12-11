@@ -44,7 +44,6 @@ describe("BLS12-377", function () {
       let [a1, a2] = split(a)
       let [r1, r2] = await instance.fpNormalTest(a1, a2)
       let r = combine(r1, r2)
-      // console.log(a % base, r, a%base == r)
       assert(a%base == r)
     }
   });
@@ -59,9 +58,7 @@ describe("BLS12-377", function () {
     ]
     for (let [a,idx] of cases) {
       let [r1, r2] = await instance.fpNormal2Test(a, idx.toString())
-      // console.log(r1, r2)
       let r = combine(r1, r2)
-      // console.log((a*(2n ** (8n*idx)))%base, r)
       assert((a*(2n ** (8n*idx)))%base == r)
     }
   });
@@ -87,23 +84,37 @@ describe("BLS12-377", function () {
   });
 
   it('fp2Mul works', async () => {
+    let base = 0x1ae3a4617c510eac63b05c06ca1493b1a22d9f300f5138f1ef3622fba094800170b5d44300000008508c00000000001n
+    let u = base - 5n
+    let cases = [
+      [0x018480be71c785fec89630a2a3841d01c565f071203e50317ea501f557db6b9b71889f52bb53540274e3e48f7c005196n,0x00ea6040e700403170dc5a51b1b140d5532777ee6651cecbe7223ece0799c9de5cf89984bff76fe6b26bfefa6ea16afen,0x01452cdfba80a16eecda9254a0ee59863c1eec808c4079363a9a9facc1d675fb243bd4bbc27383d19474b6bbf602b222n,0x00b623a64541bbd227e6681d5786d890b833c846c39bf79dfa8fb214eb26433dd491a504d1add8f4ab66f22e7a14706en,
+      ]
+    ]
+    for (let [a,au,b,bu] of cases) {
+      let [a1, a2] = split(a)
+      let [b1, b2] = split(b)
+      let [au1, au2] = split(au)
+      let [bu1, bu2] = split(bu)
+      let [r1, r2, ru1, ru2] = await instance.fp2MulTest([a1, a2, au1, au2, b1, b2, bu1, bu2])
+      let r = combine(r1, r2)
+      let ru = combine(ru1, ru2)
+      // console.log((a*b)%base, r)
+      assert((a*b + u*au*bu)%base == r)
+      assert(((a+au)*(b+bu) - au*bu - a*b)%base == ru)
+    }
+    /*
     let [a1, a2, b1, b2] = await instance.fp2MulTest()
     console.log(combine(a1,a2), combine(b1,b2))
+    */
   });
 
-  it('uncompressing works', async () => {
+  it.skip('uncompressing works', async () => {
     let [a1, a2] = await instance.testUncompress()
     console.log(combine(a1,a2))
   });
 
-  it('deserialization works', async () => {
+  it.skip('deserialization works', async () => {
     let buf = Buffer.from('efe91bb26eb1b9ea4e39cdff121548d55ccb37bdc8828218bb419daa2c1e958554ff87bf2562fcc8670a74fede488800', 'hex')
-    let [a1, a2, b] = await instance.testDeserialize(buf)
-    console.log(combine(a1,a2), b)
-  });
-
-  it('deserialization works', async () => {
-    let buf = Buffer.from('efe91bb26eb1b9ea4e39cdff121548d55ccb37bdc8828218bb419daa2c1e958554ff87bf2562fcc8670a74fede488880', 'hex')
     let [a1, a2, b] = await instance.testDeserialize(buf)
     console.log(combine(a1,a2), b)
   });
