@@ -734,15 +734,15 @@ library B12_381Lib {
     using B12 for B12.G1Point;
     using B12 for B12.G2Point;
 
-    uint8 constant G1_ADD = 10;
-    uint8 constant G1_MUL = 11;
-    uint8 constant G1_MULTI_EXP = 12;
-    uint8 constant G2_ADD = 13;
-    uint8 constant G2_MUL = 14;
-    uint8 constant G2_MULTI_EXP = 15;
-    uint8 constant PAIRING = 16;
-    uint8 constant MAP_TO_G1 = 17;
-    uint8 constant MAP_TO_G2 = 18;
+    uint8 constant G1_ADD = 0xF2;
+    uint8 constant G1_MUL = 0xF1;
+    uint8 constant G1_MULTI_EXP = 0xF0;
+    uint8 constant G2_ADD = 0xEF;
+    uint8 constant G2_MUL = 0xEE;
+    uint8 constant G2_MULTI_EXP = 0xED;
+    uint8 constant PAIRING = 0xEC;
+    uint8 constant MAP_TO_G1 = 0xEB;
+    uint8 constant MAP_TO_G2 = 0xEA;
 
     function negativeP1() internal pure returns (B12.G1Point memory p) {
         p.X.a = 31827880280837800241567138048534752271;
@@ -874,13 +874,13 @@ library B12_377Lib {
     using B12 for B12.G2Point;
 
 
-    uint8 constant G1_ADD = 19;
-    uint8 constant G1_MUL = 20;
-    uint8 constant G1_MULTI_EXP = 21;
-    uint8 constant G2_ADD = 22;
-    uint8 constant G2_MUL = 23;
-    uint8 constant G2_MULTI_EXP = 24;
-    uint8 constant PAIRING = 25;
+    uint8 constant G1_ADD = 0xE9;
+    uint8 constant G1_MUL = 0xE8;
+    uint8 constant G1_MULTI_EXP = 0xE7;
+    uint8 constant G2_ADD = 0xE6;
+    uint8 constant G2_MUL = 0xE5;
+    uint8 constant G2_MULTI_EXP = 0xE4;
+    uint8 constant PAIRING = 0xE3;
 
 
     function g1Add(B12.G1Point memory a, B12.G1Point memory b)
