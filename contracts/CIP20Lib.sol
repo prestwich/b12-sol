@@ -67,7 +67,7 @@ library CIP20Lib {
         return executeCip20(input, KECCAK_512_SELECTOR, 64);
     }
 
-    function keccak512(bytes memory input)
+    function sha2_512(bytes memory input)
         internal
         view
         returns (bytes memory)
