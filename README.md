@@ -7,12 +7,14 @@ to execute.
 
 ## Building
 
-`$ npm i`
-`$ npm compile`
+- `$ npm i`
+- `$ npm compile`
 
 ## Tests
 
-Connect a node an RPC with the Donut hard fork active
+Connect a node an RPC with the Donut hard fork active. Ensure that your node
+has an **unlocked** **funded** account. The tests will deploy contracts and then
+run the test vectors.
 
 - `$ npm run test`
 
