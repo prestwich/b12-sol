@@ -1,11 +1,11 @@
 const { assert } = require("chai");
 
-const g1Add = require("./12377/bls12377G1Add_matter.json");
-const g1Mul = require("./12377/bls12377G1Mul_matter.json");
-const g1MultiExp = require("./12377/bls12377G1MultiExp_matter.json");
-const g2Add = require("./12377/bls12377G2Add_matter.json");
-const g2Mul = require("./12377/bls12377G2Mul_matter.json");
-const g2MultiExp = require("./12377/bls12377G2MultiExp_matter.json");
+const g1Add = require("./12381/blsG1Add.json");
+const g1Mul = require("./12381/blsG1Mul.json");
+const g1MultiExp = require("./12381/blsG1MultiExp.json");
+const g2Add = require("./12381/blsG2Add.json");
+const g2Mul = require("./12381/blsG2Mul.json");
+const g2MultiExp = require("./12381/blsG2MultiExp.json");
 
 function split(n) {
   let str = n.toString(16).padStart(128, "0");
@@ -23,16 +23,16 @@ function combine(a, b) {
   return BigInt("0x" + aa + bb);
 }
 
-describe("BLS12-377", function () {
+describe("BLS12-381", function () {
   let instance;
   this.timeout(60000);
 
   before(async () => {
-    const BLS12_377Passthrough = await ethers.getContractFactory(
-      "BLS12_377Passthrough"
+    const BLS12_381Passthrough = await ethers.getContractFactory(
+      "BLS12_381Passthrough"
     );
-    // instance = BLS12_377Passthrough.attach('0x5d432D9AA925210DfbCfd967E884C216853dC017');
-    instance = await BLS12_377Passthrough.deploy();
+    // instance = BLS12_381Passthrough.attach('0x5d432D9AA925210DfbCfd967E884C216853dC017');
+    instance = await BLS12_381Passthrough.deploy();
   });
 
   it("fpNormal works", async () => {

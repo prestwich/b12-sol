@@ -1,164 +1,20 @@
 //SPDX-License-Identifier: MIT OR Apache-2.0
 pragma solidity >=0.5.10;
 
-import {CeloB12_377Lib} from "../B12.sol";
-import {B12} from "../B12.sol";
+import {CeloB12_377Lib, B12_381Lib, B12} from "../B12.sol";
 import {TypedMemView} from "@summa-tx/memview.sol/contracts/TypedMemView.sol";
 
-contract Passthrough {
-    using CeloB12_377Lib for B12.G1Point;
-    using CeloB12_377Lib for B12.G2Point;
-    using CeloB12_377Lib for B12.Fp;
-    using CeloB12_377Lib for B12.Fp2;
+contract Common {
     using B12 for B12.G1Point;
     using B12 for B12.G2Point;
     using B12 for B12.Fp;
     using B12 for B12.Fp2;
-    using CeloB12_377Lib for bytes;
     using B12 for bytes;
 
     using TypedMemView for bytes;
     using TypedMemView for bytes29;
 
     constructor() public {}
-
-    event MEMDUMP(uint256 a, uint256 b, uint256 c, uint256 d);
-
-    function dumpMem(uint256 idx) internal {
-        uint256 a;
-        uint256 b;
-        uint256 c;
-        uint256 d;
-
-        assembly {
-            a := mload(add(idx, 0x00))
-            b := mload(add(idx, 0x20))
-            c := mload(add(idx, 0x40))
-            d := mload(add(idx, 0x60))
-        }
-        emit MEMDUMP(a, b, c, d);
-    }
-
-    function executePrecompile(
-        bytes memory input,
-        uint8 addr,
-        uint256 output_len
-    ) internal view returns (bytes memory output) {
-        bool success;
-        assembly {
-            success := staticcall(
-                sub(gas(), 2000),
-                addr,
-                add(input, 0x20), // location
-                mload(input), // length
-                add(output, 0x20), // location
-                output_len // length
-            )
-            mstore(output, output_len)
-        }
-
-        require(success, "failed");
-    }
-
-    function simple(
-        bytes calldata input,
-        uint8 addr,
-        uint256 output_len
-    ) external view returns (bytes memory) {
-        return executePrecompile(input, addr, output_len);
-    }
-
-    function simpleTx(
-        bytes calldata input,
-        uint8 addr,
-        uint256 output_len
-    ) external returns (bytes memory output) {
-        output = executePrecompile(input, addr, output_len);
-        uint256 a;
-        assembly {
-            a := output
-        }
-        dumpMem(a + 0x20);
-        return output;
-    }
-
-    function g1Add(bytes calldata args) external view returns (bytes memory) {
-        B12.G1Point memory a = args.parseG1(0);
-        B12.G1Point memory b = args.parseG1(4 * 32);
-        return a.g1Add(b).serializeG1();
-    }
-
-    function g1Mul(bytes calldata args) external view returns (bytes memory) {
-        B12.G1Point memory a = args.parseG1(0);
-        uint256 scalar = args.ref(0).indexUint(4 * 32, 32);
-        return a.g1Mul(scalar).serializeG1();
-    }
-
-    function g1MultiExp(bytes calldata args)
-        external
-        view
-        returns (bytes memory)
-    {
-        bytes29 ref = args.ref(0);
-
-
-        B12.G1MultiExpArg[] memory input
-         = new B12.G1MultiExpArg[](args.length / 160);
-
-        for (uint256 i = 0; i < args.length / 160; i += 1) {
-            uint256 idx = i * 160;
-
-            input[i].point.X.a = ref.indexUint(idx + 0x00, 32);
-            input[i].point.X.b = ref.indexUint(idx + 0x20, 32);
-            input[i].point.Y.a = ref.indexUint(idx + 0x40, 32);
-            input[i].point.Y.b = ref.indexUint(idx + 0x60, 32);
-            input[i].scalar = ref.indexUint(idx + 0x80, 32);
-        }
-
-        return CeloB12_377Lib.g1MultiExp(input).serializeG1();
-    }
-
-    function g2Add(bytes calldata args) external view returns (bytes memory) {
-        B12.G2Point memory a = args.parseG2(0);
-        B12.G2Point memory b = args.parseG2(8 * 32);
-        return a.g2Add(b).serializeG2();
-    }
-
-    function g2Mul(bytes calldata args) external view returns (bytes memory) {
-        B12.G2Point memory a = args.parseG2(0);
-        uint256 scalar = args.ref(0).indexUint(8 * 32, 32);
-        a.g2Mul(scalar);
-        return a.serializeG2();
-    }
-
-    function g2MultiExp(bytes calldata args)
-        external
-        view
-        returns (bytes memory)
-    {
-        bytes29 ref = args.ref(0);
-
-
-        B12.G2MultiExpArg[] memory input
-         = new B12.G2MultiExpArg[](args.length / 288);
-
-        for (uint256 i = 0; i < args.length / 288; i += 1) {
-            uint256 idx = i * 288;
-
-            input[i].point.X.a.a = ref.indexUint(idx + 0x00, 32);
-            input[i].point.X.a.b = ref.indexUint(idx + 0x20, 32);
-            input[i].point.X.b.a = ref.indexUint(idx + 0x40, 32);
-            input[i].point.X.b.b = ref.indexUint(idx + 0x60, 32);
-            input[i].point.Y.a.a = ref.indexUint(idx + 0x80, 32);
-            input[i].point.Y.a.b = ref.indexUint(idx + 0xa0, 32);
-            input[i].point.Y.b.a = ref.indexUint(idx + 0xc0, 32);
-            input[i].point.Y.b.b = ref.indexUint(idx + 0xe0, 32);
-            input[i].scalar = ref.indexUint(idx + 0x100, 32);
-        }
-
-        return CeloB12_377Lib.g2MultiExp(input).serializeG2();
-    }
-
     function testParseG1(bytes calldata arg)
         external
         pure
@@ -263,4 +119,253 @@ contract Passthrough {
         return (p.a, p.b, b);
     }
 
+    event MEMDUMP(uint256 a, uint256 b, uint256 c, uint256 d);
+
+    function dumpMem(uint256 idx) internal {
+        uint256 a;
+        uint256 b;
+        uint256 c;
+        uint256 d;
+
+        assembly {
+            a := mload(add(idx, 0x00))
+            b := mload(add(idx, 0x20))
+            c := mload(add(idx, 0x40))
+            d := mload(add(idx, 0x60))
+        }
+        emit MEMDUMP(a, b, c, d);
+    }
+
+    function executePrecompile(
+        bytes memory input,
+        uint8 addr,
+        uint256 output_len
+    ) internal view returns (bytes memory output) {
+        bool success;
+        assembly {
+            success := staticcall(
+                sub(gas(), 2000),
+                addr,
+                add(input, 0x20), // location
+                mload(input), // length
+                add(output, 0x20), // location
+                output_len // length
+            )
+            mstore(output, output_len)
+        }
+
+        require(success, "failed");
+    }
+
+    function simple(
+        bytes calldata input,
+        uint8 addr,
+        uint256 output_len
+    ) external view returns (bytes memory) {
+        return executePrecompile(input, addr, output_len);
+    }
+
+    function simpleTx(
+        bytes calldata input,
+        uint8 addr,
+        uint256 output_len
+    ) external returns (bytes memory output) {
+        output = executePrecompile(input, addr, output_len);
+        uint256 a;
+        assembly {
+            a := output
+        }
+        dumpMem(a + 0x20);
+        return output;
+    }
+
+}
+
+contract BLS12_381Passthrough is Common {
+    using B12_381Lib for B12.G1Point;
+    using B12_381Lib for B12.G2Point;
+    using B12_381Lib for B12.Fp;
+    using B12_381Lib for B12.Fp2;
+    using B12 for B12.G1Point;
+    using B12 for B12.G2Point;
+    using B12 for B12.Fp;
+    using B12 for B12.Fp2;
+    using B12_381Lib for bytes;
+    using B12 for bytes;
+
+    using TypedMemView for bytes;
+    using TypedMemView for bytes29;
+
+    constructor() public {}
+
+    function g1Add(bytes calldata args) external view returns (bytes memory) {
+        B12.G1Point memory a = args.parseG1(0);
+        B12.G1Point memory b = args.parseG1(4 * 32);
+        return a.g1Add(b).serializeG1();
+    }
+
+    function g1Mul(bytes calldata args) external view returns (bytes memory) {
+        B12.G1Point memory a = args.parseG1(0);
+        uint256 scalar = args.ref(0).indexUint(4 * 32, 32);
+        return a.g1Mul(scalar).serializeG1();
+    }
+
+    function g1MultiExp(bytes calldata args)
+        external
+        view
+        returns (bytes memory)
+    {
+        bytes29 ref = args.ref(0);
+
+        B12.G1MultiExpArg[] memory input
+         = new B12.G1MultiExpArg[](args.length / 160);
+
+        for (uint256 i = 0; i < args.length / 160; i += 1) {
+            uint256 idx = i * 160;
+
+            input[i].point.X.a = ref.indexUint(idx + 0x00, 32);
+            input[i].point.X.b = ref.indexUint(idx + 0x20, 32);
+            input[i].point.Y.a = ref.indexUint(idx + 0x40, 32);
+            input[i].point.Y.b = ref.indexUint(idx + 0x60, 32);
+            input[i].scalar = ref.indexUint(idx + 0x80, 32);
+        }
+
+        return CeloB12_377Lib.g1MultiExp(input).serializeG1();
+    }
+
+    function g2Add(bytes calldata args) external view returns (bytes memory) {
+        B12.G2Point memory a = args.parseG2(0);
+        B12.G2Point memory b = args.parseG2(8 * 32);
+        return a.g2Add(b).serializeG2();
+    }
+
+    function g2Mul(bytes calldata args) external view returns (bytes memory) {
+        B12.G2Point memory a = args.parseG2(0);
+        uint256 scalar = args.ref(0).indexUint(8 * 32, 32);
+        a.g2Mul(scalar);
+        return a.serializeG2();
+    }
+
+    function g2MultiExp(bytes calldata args)
+        external
+        view
+        returns (bytes memory)
+    {
+        bytes29 ref = args.ref(0);
+
+
+        B12.G2MultiExpArg[] memory input
+         = new B12.G2MultiExpArg[](args.length / 288);
+
+        for (uint256 i = 0; i < args.length / 288; i += 1) {
+            uint256 idx = i * 288;
+
+            input[i].point.X.a.a = ref.indexUint(idx + 0x00, 32);
+            input[i].point.X.a.b = ref.indexUint(idx + 0x20, 32);
+            input[i].point.X.b.a = ref.indexUint(idx + 0x40, 32);
+            input[i].point.X.b.b = ref.indexUint(idx + 0x60, 32);
+            input[i].point.Y.a.a = ref.indexUint(idx + 0x80, 32);
+            input[i].point.Y.a.b = ref.indexUint(idx + 0xa0, 32);
+            input[i].point.Y.b.a = ref.indexUint(idx + 0xc0, 32);
+            input[i].point.Y.b.b = ref.indexUint(idx + 0xe0, 32);
+            input[i].scalar = ref.indexUint(idx + 0x100, 32);
+        }
+
+        return B12_381Lib.g2MultiExp(input).serializeG2();
+    }
+}
+
+contract BLS12_377Passthrough is Common {
+    using CeloB12_377Lib for B12.G1Point;
+    using CeloB12_377Lib for B12.G2Point;
+    using CeloB12_377Lib for B12.Fp;
+    using CeloB12_377Lib for B12.Fp2;
+    using B12 for B12.G1Point;
+    using B12 for B12.G2Point;
+    using B12 for B12.Fp;
+    using B12 for B12.Fp2;
+    using CeloB12_377Lib for bytes;
+    using B12 for bytes;
+
+    using TypedMemView for bytes;
+    using TypedMemView for bytes29;
+
+    constructor() public {}
+
+    function g1Add(bytes calldata args) external view returns (bytes memory) {
+        B12.G1Point memory a = args.parseG1(0);
+        B12.G1Point memory b = args.parseG1(4 * 32);
+        return a.g1Add(b).serializeG1();
+    }
+
+    function g1Mul(bytes calldata args) external view returns (bytes memory) {
+        B12.G1Point memory a = args.parseG1(0);
+        uint256 scalar = args.ref(0).indexUint(4 * 32, 32);
+        return a.g1Mul(scalar).serializeG1();
+    }
+
+    function g1MultiExp(bytes calldata args)
+        external
+        view
+        returns (bytes memory)
+    {
+        bytes29 ref = args.ref(0);
+
+
+        B12.G1MultiExpArg[] memory input
+         = new B12.G1MultiExpArg[](args.length / 160);
+
+        for (uint256 i = 0; i < args.length / 160; i += 1) {
+            uint256 idx = i * 160;
+
+            input[i].point.X.a = ref.indexUint(idx + 0x00, 32);
+            input[i].point.X.b = ref.indexUint(idx + 0x20, 32);
+            input[i].point.Y.a = ref.indexUint(idx + 0x40, 32);
+            input[i].point.Y.b = ref.indexUint(idx + 0x60, 32);
+            input[i].scalar = ref.indexUint(idx + 0x80, 32);
+        }
+
+        return CeloB12_377Lib.g1MultiExp(input).serializeG1();
+    }
+
+    function g2Add(bytes calldata args) external view returns (bytes memory) {
+        B12.G2Point memory a = args.parseG2(0);
+        B12.G2Point memory b = args.parseG2(8 * 32);
+        return a.g2Add(b).serializeG2();
+    }
+
+    function g2Mul(bytes calldata args) external view returns (bytes memory) {
+        B12.G2Point memory a = args.parseG2(0);
+        uint256 scalar = args.ref(0).indexUint(8 * 32, 32);
+        a.g2Mul(scalar);
+        return a.serializeG2();
+    }
+
+    function g2MultiExp(bytes calldata args)
+        external
+        view
+        returns (bytes memory)
+    {
+        bytes29 ref = args.ref(0);
+
+
+        B12.G2MultiExpArg[] memory input
+         = new B12.G2MultiExpArg[](args.length / 288);
+
+        for (uint256 i = 0; i < args.length / 288; i += 1) {
+            uint256 idx = i * 288;
+
+            input[i].point.X.a.a = ref.indexUint(idx + 0x00, 32);
+            input[i].point.X.a.b = ref.indexUint(idx + 0x20, 32);
+            input[i].point.X.b.a = ref.indexUint(idx + 0x40, 32);
+            input[i].point.X.b.b = ref.indexUint(idx + 0x60, 32);
+            input[i].point.Y.a.a = ref.indexUint(idx + 0x80, 32);
+            input[i].point.Y.a.b = ref.indexUint(idx + 0xa0, 32);
+            input[i].point.Y.b.a = ref.indexUint(idx + 0xc0, 32);
+            input[i].point.Y.b.b = ref.indexUint(idx + 0xe0, 32);
+            input[i].scalar = ref.indexUint(idx + 0x100, 32);
+        }
+
+        return CeloB12_377Lib.g2MultiExp(input).serializeG2();
+    }
 }
